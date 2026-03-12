@@ -5,7 +5,7 @@
  */
 return [
     'role' => [
-        'multiple' => true,
+        'multiple' => false,
         'editable' => true,
     ],
     'repository' => [
