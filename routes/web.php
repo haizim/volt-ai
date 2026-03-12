@@ -25,7 +25,7 @@ Route::redirect('/', 'auth/login');
 Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/home', HomeController::class)->name('home');
 
-    Route::resource('contact', ContactController::class)->middleware(ContactView::class);
+    Route::post('/users', [UsersController::class, 'store'])->name('users.store');
 });
 
 include __DIR__.'/auth.php';
