@@ -23,6 +23,7 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 /public/laravolt
+/coverage
 /build/coverage
 /pestphp-coverage-result.xml
 /pestphp-execution-result.xml
