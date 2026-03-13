@@ -24,6 +24,12 @@ return [
                 'icon' => 'building',
                 'permissions' => [Permission::OUTLET_VIEW],
             ],
+            'Bank' => [
+                'route' => 'banks.index',
+                'active' => 'banks/*',
+                'icon' => 'university',
+                'permissions' => [Permission::BANK_VIEW],
+            ],
         ],
     ],
 ];

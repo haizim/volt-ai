@@ -25,4 +25,9 @@ final class Permission extends Enum
     const OUTLET_VIEW = 'outlet:view';
 
     const OUTLET_MANAGE = 'outlet:manage';
+
+    // BANK
+    const BANK_VIEW = 'bank:view';
+
+    const BANK_MANAGE = 'bank:manage';
 }
