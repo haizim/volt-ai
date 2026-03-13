@@ -52,4 +52,9 @@ final class User extends BaseUser
     {
         return $this->hasMany(Product::class);
     }
+
+    public function outlets()
+    {
+        return $this->hasMany(Outlet::class);
+    }
 }

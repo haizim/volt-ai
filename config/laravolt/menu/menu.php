@@ -18,6 +18,12 @@ return [
                 'icon' => 'cube',
                 'permissions' => [Permission::PRODUCT_VIEW],
             ],
+            'Outlet' => [
+                'route' => 'outlet.index',
+                'active' => 'outlet/*',
+                'icon' => 'building',
+                'permissions' => [Permission::OUTLET_VIEW],
+            ],
         ],
     ],
 ];
