@@ -11,6 +11,8 @@ use BenSampo\Enum\Enum;
  */
 final class Permission extends Enum
 {
-    // sample permission
-    // const POST_MANAGE = 'post.manage';
+    // CONTACT
+    const CONTACT_VIEW = 'contact:view';
+
+    const CONTACT_MANAGE = 'contact:manage';
 }

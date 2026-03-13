@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Enums\Permission;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\UsersController;
@@ -26,6 +25,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/home', HomeController::class)->name('home');
 
     Route::post('/users', [UsersController::class, 'store'])->name('users.store');
+
+    Route::resource('contact', ContactController::class)->middleware(ContactView::class);
 });
 
 include __DIR__.'/auth.php';
