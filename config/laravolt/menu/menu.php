@@ -12,6 +12,12 @@ return [
                 'icon' => 'users',
                 'permissions' => [Permission::CONTACT_VIEW],
             ],
+            'Product' => [
+                'route' => 'product.index',
+                'active' => 'product/*',
+                'icon' => 'cube',
+                'permissions' => [Permission::PRODUCT_VIEW],
+            ],
         ],
     ],
 ];

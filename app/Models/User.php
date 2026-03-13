@@ -47,4 +47,9 @@ final class User extends BaseUser
     {
         return $this->hasMany(Contact::class);
     }
+
+    public function products()
+    {
+        return $this->hasMany(Product::class);
+    }
 }
