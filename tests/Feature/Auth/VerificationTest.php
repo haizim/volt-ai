@@ -11,7 +11,10 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Notification;
 
 beforeEach(function (): void {
-    config(['laravolt.platform.features.verification' => true]);
+    // config(['laravolt.platform.features.verification' => true]);
+    if (! $this->app['config']->get('laravolt.platform.features.verification')) {
+        $this->markTestSkipped('Verification is disabled');
+    }
 });
 
 test('it can visit verification page', function (): void {

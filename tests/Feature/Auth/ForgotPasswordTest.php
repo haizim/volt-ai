@@ -57,10 +57,13 @@ test('it can handle send email failure', function (): void {
         ->assertSessionHas('error');
 });
 
-// tanpa register
-// test('it has register link', function (): void {
-//     $this->get(route('auth::forgot.show'))->assertSeeText(trans('laravolt::auth.register_here'));
-// });
+test('it has register link', function (): void {
+    if (! $this->app['config']->get('laravolt.platform.features.registration')) {
+        $this->markTestSkipped('Registration is disabled');
+    }
+
+    $this->get(route('auth::forgot.show'))->assertSeeText(trans('laravolt::auth.register_here'));
+});
 
 test('it does not have register link if registration disabled', function (): void {
     $this->app['config']->set('laravolt.platform.features.registration', false);

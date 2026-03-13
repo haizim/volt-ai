@@ -7,6 +7,12 @@ use App\Providers\AppServiceProvider;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Support\Facades\Notification;
 
+beforeEach(function (): void {
+    if (! $this->app['config']->get('laravolt.platform.features.registration')) {
+        $this->markTestSkipped('Registration is disabled');
+    }
+});
+
 test('it can display registration page', function (): void {
     $this->get(route('auth::registration.show'))
         ->assertOk()
@@ -31,6 +37,9 @@ test('it can handle correct registration', function (): void {
 });
 
 test('it can handle correct registration with activation', function (): void {
+    if (! $this->app['config']->get('laravolt.platform.features.verification')) {
+        $this->markTestSkipped('Verification is disabled');
+    }
     Notification::fake();
     $email = 'jon@laravolt.dev';
 

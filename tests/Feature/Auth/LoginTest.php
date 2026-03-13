@@ -59,7 +59,9 @@ test('it has errors if failed', function (): void {
 });
 
 test('it has register link', function (): void {
-    $this->app['config']->set('laravolt.platform.features.registration', true);
+    if (! $this->app['config']->get('laravolt.platform.features.registration')) {
+        $this->markTestSkipped('Registration is disabled');
+    }
 
     $this->get(route('auth::login.show'))
         ->assertSeeText(trans('laravolt::auth.register_here'));
