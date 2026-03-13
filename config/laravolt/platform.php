@@ -1,5 +1,7 @@
 <?php
 
+use Laravolt\Fields\Field;
+
 return [
     'middleware' => ['web', 'auth'],
     'features' => [
@@ -10,8 +12,8 @@ return [
         'kitchen_sink' => false,
         'spa' => false,
         'quick_switcher' => false,
-        'registration' => false,
-        'verification' => false,
+        'registration' => true,
+        'verification' => true,
         'captcha' => false,
         'workflow' => false,
         'enable_default_menu' => true,
@@ -55,14 +57,14 @@ return [
             'rules' => ['required'],
         ],
         [
-            'type' => \Laravolt\Fields\Field::RADIO_GROUP,
+            'type' => Field::RADIO_GROUP,
             'name' => 'theme',
             'options' => ['dark' => 'Dark', 'light' => 'Light', 'cool' => 'Cool'],
             'label' => 'Tema',
             'inline' => true,
         ],
         [
-            'type' => \Laravolt\Fields\Field::DROPDOWN_COLOR,
+            'type' => Field::DROPDOWN_COLOR,
             'name' => 'color',
             'label' => 'Warna Aksen',
             'inline' => true,

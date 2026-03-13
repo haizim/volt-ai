@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Livewire\Table;
 
 use App\Enums\Permission;
@@ -9,7 +11,7 @@ use Laravolt\Suitable\Columns\RowNumber;
 use Laravolt\Suitable\Columns\Text;
 use Laravolt\Ui\TableView;
 
-class ContactTable extends TableView
+final class ContactTable extends TableView
 {
     public function data()
     {

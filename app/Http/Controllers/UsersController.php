@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -13,7 +15,7 @@ use Laravolt\Epicentrum\Repositories\RepositoryInterface;
 use Laravolt\Platform\Models\User;
 use Laravolt\Support\Contracts\TimezoneRepository;
 
-class UsersController extends Controller
+final class UsersController extends Controller
 {
     use AuthorizesRequests;
 
@@ -23,9 +25,6 @@ class UsersController extends Controller
 
     /**
      * UserController constructor.
-     *
-     * @param \Laravolt\Epicentrum\Repositories\RepositoryInterface $repository
-     * @param \Laravolt\Support\Contracts\TimezoneRepository        $timezone
      */
     public function __construct(RepositoryInterface $repository, TimezoneRepository $timezone)
     {
@@ -59,7 +58,7 @@ class UsersController extends Controller
         // save to db
         $roles = $request->get('roles', []);
         $user = $this->repository->createByAdmin($request->all(), $roles);
-        
+
         $password = $request->get('password');
 
         if (config('laravolt.platform.features.verification') === false) {

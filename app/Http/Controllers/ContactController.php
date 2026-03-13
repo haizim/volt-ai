@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ContactRequest;
 use App\Models\Contact;
 use App\Services\ContactService;
 
-class ContactController extends Controller
+final class ContactController
 {
     /**
      * Display a listing of the resource.

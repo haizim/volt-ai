@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 /**
  * @extends Factory<Product>
  */
-class ProductFactory extends Factory
+final class ProductFactory extends Factory
 {
     public function definition(): array
     {

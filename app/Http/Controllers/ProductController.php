@@ -8,7 +8,7 @@ use App\Http\Requests\ProductRequest;
 use App\Models\Product;
 use App\Services\ProductService;
 
-class ProductController extends Controller
+final class ProductController
 {
     public function index()
     {

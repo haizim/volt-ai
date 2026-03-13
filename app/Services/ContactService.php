@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
 use App\Models\Contact;
 use Illuminate\Http\Request;
 
-class ContactService
+final class ContactService
 {
     public static function save(Request $request)
     {

@@ -9,7 +9,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class ProductView
+final class ProductView
 {
     public function handle(Request $request, Closure $next): Response
     {

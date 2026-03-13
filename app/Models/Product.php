@@ -11,7 +11,7 @@ use Laravolt\Suitable\AutoFilter;
 use Laravolt\Suitable\AutoSearch;
 use Laravolt\Suitable\AutoSort;
 
-class Product extends Model
+final class Product extends Model
 {
     use AutoFilter, AutoSearch, AutoSort;
     use HasFactory;

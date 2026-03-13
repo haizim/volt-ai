@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -9,7 +11,7 @@ use Laravolt\Suitable\AutoFilter;
 use Laravolt\Suitable\AutoSearch;
 use Laravolt\Suitable\AutoSort;
 
-class Contact extends Model
+final class Contact extends Model
 {
     use AutoFilter, AutoSearch, AutoSort;
     use HasFactory;

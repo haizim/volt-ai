@@ -7,7 +7,7 @@ namespace App\Services;
 use App\Models\Product;
 use Illuminate\Http\Request;
 
-class ProductService
+final class ProductService
 {
     public static function save(Request $request)
     {

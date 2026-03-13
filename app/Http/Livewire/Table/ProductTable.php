@@ -12,7 +12,7 @@ use Laravolt\Suitable\Columns\RowNumber;
 use Laravolt\Suitable\Columns\Text;
 use Laravolt\Ui\TableView;
 
-class ProductTable extends TableView
+final class ProductTable extends TableView
 {
     public function data()
     {
