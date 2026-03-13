@@ -6,8 +6,7 @@ Based on the established patterns in the contact management implementation, thes
 
 The standard workflow follows a **three-commit approach**:
 1. **Feature Implementation Commit** - Complete CRUD functionality with all necessary components
-2. **Code Quality Commit** - Architectural compliance fixes and final polish
-3. **Testing Commit** - Comprehensive test coverage for the implemented feature
+2. **Testing Commit** - Comprehensive test coverage for the implemented feature
 
 ## Phase 1: Feature Implementation (Commit 1)
 
@@ -37,7 +36,7 @@ const {FEATURE}_MANAGE = '{feature}:manage';
 - Add `declare(strict_types=1);` at the top
 - Add `AutoFilter`, `AutoSearch`, `AutoSort` traits from Laravolt Suitable
 - Define `$fillable` properties for mass assignment
-- Add relationships to other models (e.g., `belongsTo(User::class)`)
+- Add relationships to other models if needed (e.g., `belongsTo(User::class)`)
 
 **Factory:** Create database factory
 - **CRITICAL:** Must be marked as `final class`
@@ -249,18 +248,6 @@ Add menu item with proper permissions:
 ],
 ```
 
-### 1.11 User Model Relationships
-
-**File: `app/Models/User.php`**
-
-Add relationship to the new model:
-```php
-public function {feature}s()
-{
-    return $this->hasMany({Feature}::class);
-}
-```
-
 ## Phase 2: Testing Implementation (Commit 2)
 
 ### 2.1 Test Environment Setup
@@ -416,25 +403,9 @@ Test all service methods:
 - [ ] Create all Blade views with Laravolt components
 - [ ] Add routes with middleware
 - [ ] Add menu configuration
-- [ ] Update User model with relationships
 - [ ] Run migration and test manually
 
-### Phase 2: Code Quality & Architectural Compliance
-- [ ] **CRITICAL:** Ensure ALL files have `declare(strict_types=1);`
-- [ ] **CRITICAL:** Ensure ALL classes are marked as `final`
-- [ ] Run `php artisan test --compact` to check for ArchTest failures
-- [ ] Fix any architectural violations:
-  - [ ] Models must be `final class`
-  - [ ] Services must be `final class`
-  - [ ] Controllers must be `final class` (not extending base Controller)
-  - [ ] Requests must be `final class`
-  - [ ] Middleware must be `final class`
-  - [ ] Factories must be `final class`
-  - [ ] Seeders must be `final class`
-  - [ ] Livewire components must be `final class`
-- [ ] Run `vendor/bin/pint --dirty --format agent` for code formatting
-
-### Phase 3: Testing Implementation
+### Phase 2: Testing Implementation
 - [ ] Create `.env.testing` configuration
 - [ ] Create icon fixture stubs
 - [ ] Create feature test with permission tests
@@ -449,7 +420,7 @@ Test all service methods:
 ### User-Scoped Queries
 ```php
 $me = auth()->user();
-$query = Model::query()->where('user_id', $me->id);
+$query = Model::query();
 ```
 
 ### Flash Messages
