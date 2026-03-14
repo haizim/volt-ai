@@ -11,6 +11,7 @@ use App\Services\BankService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 final class BankController
 {
@@ -22,6 +23,7 @@ final class BankController
     public function create(): View
     {
         Gate::authorize(Permission::BANK_MANAGE);
+
         return view('banks.create');
     }
 
@@ -62,5 +64,12 @@ final class BankController
 
         return redirect()->route('banks.index')
             ->withSuccess('Bank berhasil dihapus');
+    }
+
+    public function export(): BinaryFileResponse
+    {
+        Gate::authorize(Permission::BANK_VIEW);
+
+        return BankService::export();
     }
 }

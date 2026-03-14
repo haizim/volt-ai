@@ -174,3 +174,22 @@ test('it_can_delete_a_bank', function () {
 
     $this->assertSoftDeleted('banks', ['id' => $bank->id]);
 });
+
+test('it_can_export_banks_with_view_permission', function () {
+    Bank::factory()->count(3)->create();
+
+    $response = $this->actingAs($this->normalUser)
+        ->get(route('banks.export'));
+
+    $response->assertStatus(200);
+    $response->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+});
+
+test('it_cannot_export_banks_without_view_permission', function () {
+    $userWithoutPermission = User::factory()->create();
+
+    $response = $this->actingAs($userWithoutPermission)
+        ->get(route('banks.export'));
+
+    $response->assertStatus(401);
+});

@@ -1,0 +1,32 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Exports;
+
+use App\Models\Bank;
+use Maatwebsite\Excel\Concerns\FromQuery;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithMapping;
+
+final class BankExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
+{
+    public function query()
+    {
+        return Bank::query()->orderBy('name', 'asc');
+    }
+
+    public function map($bank): array
+    {
+        return [
+            $bank->name,
+            $bank->code,
+        ];
+    }
+
+    public function headings(): array
+    {
+        return ['Nama Bank', 'Kode'];
+    }
+}

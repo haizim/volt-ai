@@ -76,3 +76,12 @@ test('it_can_delete_a_bank', function () {
 test('it_throws_exception_when_deleting_non_existent_bank', function () {
     BankService::delete(999);
 })->throws(ModelNotFoundException::class);
+
+test('it_can_export_banks', function () {
+    Bank::factory()->count(3)->create();
+
+    $response = BankService::export();
+
+    expect($response)->toBeInstanceOf(\Symfony\Component\HttpFoundation\BinaryFileResponse::class);
+    expect($response->getFile()->getExtension())->toBe('xlsx');
+});

@@ -28,7 +28,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
     Route::post('/users', [UsersController::class, 'store'])->name('users.store');
 
-    Route::resource('banks', BankController::class)->middleware(BankView::class);
+    Route::middleware(BankView::class)->group(function (): void {
+        Route::get('banks/export', [BankController::class, 'export'])->name('banks.export');
+        Route::resource('banks', BankController::class);
+    });
 
     Route::middleware(BankAccountView::class)->group(function (): void {
         Route::get('bank-accounts/export', [BankAccountController::class, 'export'])->name('bank-accounts.export');

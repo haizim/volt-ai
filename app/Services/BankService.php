@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Exports\BankExport;
 use App\Models\Bank;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 final class BankService
 {
@@ -32,5 +35,13 @@ final class BankService
         $bank = Bank::findOrFail($id);
 
         return $bank->delete();
+    }
+
+    public static function export(): BinaryFileResponse
+    {
+        $now = date('Ymd-His');
+        $fileName = "bank-{$now}.xlsx";
+
+        return Excel::download(new BankExport, $fileName);
     }
 }
