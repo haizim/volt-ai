@@ -109,28 +109,6 @@
 * **Auto CRUD (Codeless):** For simple CRUDs, define the schema inside `config/laravolt/auto-crud-resources/*.php` utilizing `\Laravolt\Fields\Field::*` constants for input types.
 * **Thunderclap (Scaffolding):** For complex CRUDs requiring customization, use the `php artisan laravolt:clap` command to generate modules based on database tables and custom `.stub` templates.
 
-### 8. Workflow & BPMN (Camunda)
-* **Configuration:** When implementing BPMN workflows, configure the module in `config/laravolt/workflow-modules/*.php` (defining `process_definition_key` and `form_schema` for tasks).
-* **Listeners:** Use `Laravolt\Workflow\Events\ProcessInstanceStarting` or `TaskCompleting` to programmatically inject variables into Camunda forms.
-
-### 9. Statistics & Charts
+### 8. Statistics & Charts
 * **Statistics:** Create single-value metric widgets by extending the `Laravolt\Ui\Statistic` class.
 * **Charts:** Create ApexCharts visualizations (without JS) by extending `Laravolt\Charts\*` classes (e.g., `Bar`, `Line`, `Donut`) via Livewire components.
-
-### 10. External API & Service Integrations
-* **Service Classes:** When integrating with external APIs (e.g., logistics, e-commerce platforms) or generating complex documents (like PDF invoices), encapsulate the logic entirely within dedicated Service classes inside `app/Services`.
-* **HTTP Client:** Always use Laravel's built-in `Illuminate\Support\Facades\Http` for API requests instead of raw cURL or Guzzle instances.
-* **Controller Usage:** Controllers must only inject these Services and handle the HTTP response, never containing the API request logic itself.
-
-### 11. Database & Performance Optimization
-* **Eager Loading:** Strictly prevent N+1 query problems by using `with()` when accessing Eloquent relationships.
-* **Indexing:** When creating migrations for transactional tables, always generate proper indexes (`$table->index()`) for foreign keys and frequently queried columns.
-* **Memory Management:** When processing large datasets or generating massive amounts of dummy data, use `cursor()` or `chunk()` instead of `get()` or `all()`.
-
-### 12. Factories & Dummy Data
-* **Data Seeding:** Whenever generating a new Eloquent Model, always assume the need for testing and automatically provide the corresponding Factory and DatabaseSeeder code.
-* **Faker:** Use Laravel's built-in Faker to generate realistic dummy data for testing purposes (e.g., sales data, user profiles).
-
-### 13. Exception Handling
-* **Flash Errors:** In web controllers, catch exceptions and return them using Laravolt's flash messages: `return redirect()->back()->with('error', $e->getMessage());`.
-* **Sentry Integration:** Rely on Laravolt's global error handlers for critical exceptions. Do not scatter `Log::error()` redundantly if the global handler already captures it.
