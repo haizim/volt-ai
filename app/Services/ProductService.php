@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Exports\ProductExport;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 final class ProductService
 {
@@ -32,5 +35,13 @@ final class ProductService
         $product = Product::findOrFail($id);
 
         return $product->delete();
+    }
+
+    public static function export(): BinaryFileResponse
+    {
+        $now = date('Ymd-His');
+        $fileName = "product-{$now}.xlsx";
+
+        return Excel::download(new ProductExport, $fileName);
     }
 }

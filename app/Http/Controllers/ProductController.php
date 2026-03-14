@@ -11,6 +11,7 @@ use App\Services\ProductService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 final class ProductController
 {
@@ -63,5 +64,12 @@ final class ProductController
 
         return redirect()->route('products.index')
             ->withSuccess('Product berhasil dihapus');
+    }
+
+    public function export(): BinaryFileResponse
+    {
+        Gate::authorize(Permission::PRODUCT_VIEW);
+
+        return ProductService::export();
     }
 }

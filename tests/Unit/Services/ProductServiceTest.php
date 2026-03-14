@@ -7,6 +7,7 @@ use App\Services\ProductService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 uses(RefreshDatabase::class);
 
@@ -84,3 +85,12 @@ test('it_can_delete_a_product', function () {
 test('it_throws_exception_when_deleting_non_existent_product', function () {
     ProductService::delete(999);
 })->throws(ModelNotFoundException::class);
+
+test('it_can_export_products', function () {
+    Product::factory()->count(3)->create();
+
+    $response = ProductService::export();
+
+    expect($response)->toBeInstanceOf(BinaryFileResponse::class);
+    expect($response->getFile()->getExtension())->toBe('xlsx');
+});

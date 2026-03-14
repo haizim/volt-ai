@@ -41,6 +41,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     });
 
     Route::middleware(ProductView::class)->group(function (): void {
+        Route::get('products/export', [ProductController::class, 'export'])->name('products.export');
         Route::resource('products', ProductController::class);
     });
 });
