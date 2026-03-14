@@ -8,6 +8,7 @@ use App\Services\BankAccountService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 uses(RefreshDatabase::class);
 
@@ -79,4 +80,18 @@ test('it_can_delete_a_bank_account', function () {
 
 test('it_throws_exception_when_deleting_non_existent_bank_account', function () {
     BankAccountService::delete(999);
+})->throws(ModelNotFoundException::class);
+
+test('it_can_export_bank_accounts_by_bank_id', function () {
+    $bank = Bank::factory()->create(['name' => 'Test Bank']);
+    BankAccount::factory()->count(3)->create(['bank_id' => $bank->id]);
+
+    $response = BankAccountService::export($bank->id);
+
+    expect($response)->toBeInstanceOf(BinaryFileResponse::class);
+    expect($response->getFile()->getExtension())->toBe('xlsx');
+});
+
+test('it_throws_exception_when_exporting_non_existent_bank', function () {
+    BankAccountService::export(999);
 })->throws(ModelNotFoundException::class);

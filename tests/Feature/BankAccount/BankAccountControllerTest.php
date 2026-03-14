@@ -193,3 +193,25 @@ test('it_cannot_delete_a_bank_account_without_manage_permission', function () {
 
     $response->assertStatus(403);
 });
+
+test('it_can_export_bank_accounts_with_view_permission', function () {
+    $bank = Bank::factory()->create();
+    BankAccount::factory()->count(3)->create(['bank_id' => $bank->id]);
+
+    $response = $this->actingAs($this->normalUser)
+        ->get(route('bank-accounts.export', ['bank_id' => $bank->id]));
+
+    $response->assertStatus(200);
+    $response->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+});
+
+test('it_cannot_export_bank_accounts_without_view_permission', function () {
+    $bank = Bank::factory()->create();
+    BankAccount::factory()->count(3)->create(['bank_id' => $bank->id]);
+    $userWithoutPermission = User::factory()->create();
+
+    $response = $this->actingAs($userWithoutPermission)
+        ->get(route('bank-accounts.export', ['bank_id' => $bank->id]));
+
+    $response->assertStatus(401);
+});
