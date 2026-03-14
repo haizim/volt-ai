@@ -12,4 +12,9 @@ use BenSampo\Enum\Enum;
 final class Permission extends Enum
 {
     // Add your permissions here
+
+    // BANK
+    const BANK_VIEW = 'bank:view';
+
+    const BANK_MANAGE = 'bank:manage';
 }

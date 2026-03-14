@@ -1,10 +1,17 @@
 <?php
 
+use App\Enums\Permission;
+
 return [
     'Menu' => [
         'order' => 1,
         'menu' => [
-            // Add your menu items here
+            'Bank' => [
+                'route' => 'banks.index',
+                'active' => 'banks/*',
+                'icon' => 'building',
+                'permissions' => [Permission::BANK_VIEW],
+            ],
         ],
     ],
 ];
