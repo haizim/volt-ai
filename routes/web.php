@@ -5,9 +5,11 @@ declare(strict_types=1);
 use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\BankController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\UsersController;
 use App\Http\Middleware\BankAccountView;
 use App\Http\Middleware\BankView;
+use App\Http\Middleware\ProductView;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -36,6 +38,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::middleware(BankAccountView::class)->group(function (): void {
         Route::get('bank-accounts/export', [BankAccountController::class, 'export'])->name('bank-accounts.export');
         Route::resource('bank-accounts', BankAccountController::class);
+    });
+
+    Route::middleware(ProductView::class)->group(function (): void {
+        Route::resource('products', ProductController::class);
     });
 });
 

@@ -18,6 +18,12 @@ return [
                 'icon' => 'credit-card',
                 'permissions' => [Permission::BANK_VIEW],
             ],
+            'Product' => [
+                'route' => 'products.index',
+                'active' => 'products/*',
+                'icon' => 'gift',
+                'permissions' => [Permission::PRODUCT_VIEW],
+            ],
         ],
     ],
 ];
