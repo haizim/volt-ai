@@ -9,8 +9,10 @@ use App\Http\Requests\BankAccountRequest;
 use App\Models\BankAccount;
 use App\Services\BankAccountService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 final class BankAccountController
 {
@@ -64,5 +66,12 @@ final class BankAccountController
 
         return redirect()->route('bank-accounts.index')
             ->withSuccess('Bank account deleted successfully');
+    }
+
+    public function export(Request $request): BinaryFileResponse
+    {
+        Gate::authorize(Permission::BANK_ACCOUNT_VIEW);
+
+        return BankAccountService::export((int) $request->bank_id);
     }
 }

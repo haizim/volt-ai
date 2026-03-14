@@ -29,7 +29,11 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::post('/users', [UsersController::class, 'store'])->name('users.store');
 
     Route::resource('banks', BankController::class)->middleware(BankView::class);
-    Route::resource('bank-accounts', BankAccountController::class)->middleware(BankAccountView::class);
+
+    Route::middleware(BankAccountView::class)->group(function (): void {
+        Route::get('bank-accounts/export', [BankAccountController::class, 'export'])->name('bank-accounts.export');
+        Route::resource('bank-accounts', BankAccountController::class);
+    });
 });
 
 include __DIR__.'/auth.php';
