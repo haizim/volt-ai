@@ -18,7 +18,7 @@
     </x-slot>
 
     <x-volt-panel title="Detail Bank">
-        <table class="ui definition table">
+        <table class="ui very basic table">
             <tbody>
                 <tr>
                     <td class="collapsing">

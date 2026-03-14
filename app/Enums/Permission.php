@@ -17,4 +17,9 @@ final class Permission extends Enum
     const BANK_VIEW = 'bank:view';
 
     const BANK_MANAGE = 'bank:manage';
+
+    // BANK ACCOUNT
+    const BANK_ACCOUNT_VIEW = 'bank-account:view';
+
+    const BANK_ACCOUNT_MANAGE = 'bank-account:manage';
 }
