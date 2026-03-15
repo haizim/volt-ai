@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Enums\Permission;
+use App\Http\Requests\BankImportRequest;
 use App\Http\Requests\BankRequest;
 use App\Models\Bank;
 use App\Services\BankService;
@@ -71,5 +72,18 @@ final class BankController
         Gate::authorize(Permission::BANK_VIEW);
 
         return BankService::export();
+    }
+
+    public function template(): BinaryFileResponse
+    {
+        return BankService::template();
+    }
+
+    public function import(BankImportRequest $request): RedirectResponse
+    {
+        BankService::import($request->file('file'));
+
+        return redirect()->route('banks.index')
+            ->withSuccess('Banks imported successfully');
     }
 }

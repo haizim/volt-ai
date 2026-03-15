@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Exports\BankExport;
+use App\Exports\BankTemplateExport;
+use App\Imports\BankImport;
 use App\Models\Bank;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
@@ -43,5 +45,15 @@ final class BankService
         $fileName = "bank-{$now}.xlsx";
 
         return Excel::download(new BankExport, $fileName);
+    }
+
+    public static function template(): BinaryFileResponse
+    {
+        return Excel::download(new BankTemplateExport, 'bank-template.xlsx');
+    }
+
+    public static function import($file): void
+    {
+        Excel::import(new BankImport, $file);
     }
 }

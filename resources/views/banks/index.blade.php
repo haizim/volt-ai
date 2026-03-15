@@ -17,6 +17,27 @@
             <x-volt-button icon="download">Export</x-volt-button>
             {!! form()->close() !!}
         </div>
+
+        @if (auth()->user()->can(\App\Enums\Permission::BANK_MANAGE))
+        <div class="title">
+            <i class="dropdown icon"></i>
+            Import
+        </div>
+        <div class=" content">
+            <p>
+                
+                {!! form()->open()->post()->action(route('banks.import'))->id('import')->multipart() !!}
+                {!! form()->file('file')->label('File')->required() !!}
+                <x-volt-link-button class="secondary" url="{{ route('banks.template') }}" icon="file excel">
+                    Template
+                </x-volt-link-button>
+                <x-volt-button type="submit">
+                    Import
+                </x-volt-button>
+                {!! form()->close() !!}
+            </p>
+        </div>
+        @endif
     </div>
     
     @livewire(\App\Http\Livewire\Table\BankTable::class)
