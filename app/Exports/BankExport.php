@@ -20,13 +20,13 @@ final class BankExport implements FromQuery, ShouldAutoSize, WithHeadings, WithM
     public function map($bank): array
     {
         return [
-            $bank->name,
             $bank->code,
+            $bank->name,
         ];
     }
 
     public function headings(): array
     {
-        return ['Nama Bank', 'Kode'];
+        return ['Kode', 'Nama Bank'];
     }
 }
