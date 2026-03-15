@@ -7,6 +7,7 @@ use App\Services\BankService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 uses(RefreshDatabase::class);
 
@@ -82,6 +83,6 @@ test('it_can_export_banks', function () {
 
     $response = BankService::export();
 
-    expect($response)->toBeInstanceOf(\Symfony\Component\HttpFoundation\BinaryFileResponse::class);
+    expect($response)->toBeInstanceOf(BinaryFileResponse::class);
     expect($response->getFile()->getExtension())->toBe('xlsx');
 });

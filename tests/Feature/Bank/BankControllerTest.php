@@ -5,20 +5,21 @@ declare(strict_types=1);
 use App\Enums\Permission;
 use App\Models\Bank;
 use App\Models\User;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
-use function Pest\Faker\fake;
+use Laravolt\Platform\Models\Role;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     $this->user = User::factory()->create();
 
-    $this->viewPermission = \Laravolt\Platform\Models\Permission::firstOrCreate(['name' => Permission::BANK_VIEW]);
-    $this->managePermission = \Laravolt\Platform\Models\Permission::firstOrCreate(['name' => Permission::BANK_MANAGE]);
+    $this->viewPermission = Laravolt\Platform\Models\Permission::firstOrCreate(['name' => Permission::BANK_VIEW]);
+    $this->managePermission = Laravolt\Platform\Models\Permission::firstOrCreate(['name' => Permission::BANK_MANAGE]);
 
-    $this->adminRole = \Laravolt\Platform\Models\Role::firstOrCreate(['name' => 'admin']);
-    $this->userRole = \Laravolt\Platform\Models\Role::firstOrCreate(['name' => 'user']);
+    $this->adminRole = Role::firstOrCreate(['name' => 'admin']);
+    $this->userRole = Role::firstOrCreate(['name' => 'user']);
 
     $this->adminRole->permissions()->attach($this->viewPermission);
     $this->adminRole->permissions()->attach($this->managePermission);
@@ -34,7 +35,7 @@ beforeEach(function (): void {
         return $user->roles->flatMap->permissions->contains('name', $ability);
     });
 
-    $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
+    $this->withoutMiddleware(ValidateCsrfToken::class);
 });
 
 test('it_can_access_bank_index_with_view_permission', function () {
