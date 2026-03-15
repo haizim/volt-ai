@@ -53,8 +53,9 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
+use Maatwebsite\Excel\Concerns\WithTitle;
 
-final class {Feature}Export implements FromQuery, ShouldAutoSize, WithColumnFormatting, WithHeadings, WithMapping
+final class {Feature}Export implements FromQuery, ShouldAutoSize, WithColumnFormatting, WithHeadings, WithMapping, WithTitle
 {
     private $paramId;
 
@@ -88,6 +89,11 @@ final class {Feature}Export implements FromQuery, ShouldAutoSize, WithColumnForm
     public function columnFormats(): array
     {
         return ['C' => 'dd/mm/yyyy h:mm'];
+    }
+
+    public function title(): string
+    {
+        return '{Sheet Name}';
     }
 }
 ```
