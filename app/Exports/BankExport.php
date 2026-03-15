@@ -9,8 +9,9 @@ use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
+use Maatwebsite\Excel\Concerns\WithTitle;
 
-final class BankExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
+final class BankExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping, WithTitle
 {
     public function query()
     {
@@ -28,5 +29,10 @@ final class BankExport implements FromQuery, ShouldAutoSize, WithHeadings, WithM
     public function headings(): array
     {
         return ['Kode', 'Nama Bank'];
+    }
+
+    public function title(): string
+    {
+        return 'Bank';
     }
 }
