@@ -37,6 +37,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
     Route::middleware(BankAccountView::class)->group(function (): void {
         Route::get('bank-accounts/export', [BankAccountController::class, 'export'])->name('bank-accounts.export');
+        Route::post('bank-accounts/import', [BankAccountController::class, 'import'])->name('bank-accounts.import');
+        Route::get('bank-accounts/template', [BankAccountController::class, 'template'])->name('bank-accounts.template');
         Route::resource('bank-accounts', BankAccountController::class);
     });
 

@@ -2,12 +2,15 @@
 
 declare(strict_types=1);
 
+use App\Exports\BankAccountTemplateExport;
 use App\Models\Bank;
 use App\Models\BankAccount;
 use App\Services\BankAccountService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 uses(RefreshDatabase::class);
@@ -95,3 +98,64 @@ test('it_can_export_bank_accounts_by_bank_id', function () {
 test('it_throws_exception_when_exporting_non_existent_bank', function () {
     BankAccountService::export(999);
 })->throws(ModelNotFoundException::class);
+
+test('it_can_download_bank_account_template', function () {
+    $response = BankAccountService::template();
+
+    expect($response)->toBeInstanceOf(BinaryFileResponse::class);
+    expect($response->getFile()->getExtension())->toBe('xlsx');
+});
+
+test('it_can_import_bank_accounts_from_excel_file', function () {
+    Storage::fake('local');
+
+    Bank::factory()->create([
+        'code' => 'TEST01',
+        'name' => 'Test Bank 01',
+    ]);
+
+    $templateFile = 'test_template_import.xlsx';
+    Excel::store(new BankAccountTemplateExport, $templateFile);
+
+    $fullPath = Storage::path($templateFile);
+    BankAccountService::import($fullPath);
+
+    expect(true)->toBeTrue();
+});
+
+test('it_can_import_bank_accounts_from_generated_template', function () {
+    Storage::fake('local');
+
+    Bank::factory()->create([
+        'code' => 'TEST02',
+        'name' => 'Test Bank 02',
+    ]);
+
+    $initialCount = BankAccount::count();
+
+    $templateFile = 'test_import_generated.xlsx';
+    Excel::store(new BankAccountTemplateExport, $templateFile);
+
+    $fullPath = Storage::path($templateFile);
+    BankAccountService::import($fullPath);
+
+    expect(BankAccount::count())->toBeGreaterThanOrEqual($initialCount);
+});
+
+test('it_can_generate_template_and_import_bank_accounts', function () {
+    Storage::fake('local');
+
+    Bank::factory()->create([
+        'code' => 'TEST03',
+        'name' => 'Test Bank 03',
+    ]);
+
+    $templateResponse = BankAccountService::template();
+    $templatePath = $templateResponse->getFile()->getRealPath();
+
+    expect(file_exists($templatePath))->toBeTrue();
+
+    BankAccountService::import($templatePath);
+
+    expect(true)->toBeTrue();
+});

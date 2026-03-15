@@ -3,13 +3,17 @@
 declare(strict_types=1);
 
 use App\Enums\Permission;
+use App\Exports\BankAccountTemplateExport;
 use App\Models\Bank;
 use App\Models\BankAccount;
 use App\Models\User;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 use Laravolt\Platform\Models\Role;
+use Maatwebsite\Excel\Facades\Excel;
 
 uses(RefreshDatabase::class);
 
@@ -214,4 +218,101 @@ test('it_cannot_export_bank_accounts_without_view_permission', function () {
         ->get(route('bank-accounts.export', ['bank_id' => $bank->id]));
 
     $response->assertStatus(401);
+});
+
+test('it_can_download_bank_account_template_with_view_permission', function () {
+    $response = $this->actingAs($this->normalUser)
+        ->get(route('bank-accounts.template'));
+
+    $response->assertStatus(200);
+    $response->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+});
+
+test('it_cannot_download_bank_account_template_without_view_permission', function () {
+    $userWithoutPermission = User::factory()->create();
+
+    $response = $this->actingAs($userWithoutPermission)
+        ->get(route('bank-accounts.template'));
+
+    $response->assertStatus(401);
+});
+
+test('it_can_access_import_page_with_manage_permission', function () {
+    $response = $this->actingAs($this->adminUser)
+        ->get(route('bank-accounts.index'));
+
+    $response->assertStatus(200);
+    $response->assertSee('Import');
+});
+
+test('it_can_import_bank_accounts_with_valid_template_file', function () {
+    Storage::fake('local');
+
+    Bank::factory()->create([
+        'code' => 'TESTCTRL',
+        'name' => 'Test Controller Bank',
+    ]);
+
+    $templateFile = 'test_import_controller.xlsx';
+    Excel::store(new BankAccountTemplateExport, $templateFile);
+
+    $fullPath = Storage::path($templateFile);
+
+    $file = new UploadedFile(
+        $fullPath,
+        'test_import.xlsx',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        null,
+        true
+    );
+
+    $response = $this->actingAs($this->adminUser)
+        ->post(route('bank-accounts.import'), [
+            'file' => $file,
+        ]);
+
+    $response->assertRedirect(route('bank-accounts.index'));
+    $response->assertSessionHasNoErrors();
+});
+
+test('it_cannot_import_bank_accounts_without_manage_permission', function () {
+    Storage::fake('local');
+
+    $templateFile = 'test_import_no_permission.xlsx';
+    Excel::store(new BankAccountTemplateExport, $templateFile);
+
+    $fullPath = Storage::path($templateFile);
+
+    $file = new UploadedFile(
+        $fullPath,
+        'test_import.xlsx',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        null,
+        true
+    );
+
+    $response = $this->actingAs($this->normalUser)
+        ->post(route('bank-accounts.import'), [
+            'file' => $file,
+        ]);
+
+    $response->assertStatus(403);
+});
+
+test('it_cannot_import_bank_accounts_with_invalid_file_format', function () {
+    $file = UploadedFile::fake()->create('test.pdf', 100, 'application/pdf');
+
+    $response = $this->actingAs($this->adminUser)
+        ->post(route('bank-accounts.import'), [
+            'file' => $file,
+        ]);
+
+    $response->assertSessionHasErrors(['file']);
+});
+
+test('it_cannot_import_bank_accounts_without_file', function () {
+    $response = $this->actingAs($this->adminUser)
+        ->post(route('bank-accounts.import'), []);
+
+    $response->assertSessionHasErrors(['file']);
 });

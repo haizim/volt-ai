@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\Permission;
 use App\Http\Requests\BankAccountRequest;
+use App\Http\Requests\ImportRequest;
 use App\Models\BankAccount;
 use App\Services\BankAccountService;
 use Illuminate\Http\RedirectResponse;
@@ -73,5 +74,18 @@ final class BankAccountController
         Gate::authorize(Permission::BANK_ACCOUNT_VIEW);
 
         return BankAccountService::export((int) $request->bank_id);
+    }
+
+    public function template(): BinaryFileResponse
+    {
+        return BankAccountService::template();
+    }
+
+    public function import(ImportRequest $request): RedirectResponse
+    {
+        BankAccountService::import($request->file('file'));
+
+        return redirect()->route('bank-accounts.index')
+            ->withSuccess('Bank accounts imported successfully');
     }
 }
