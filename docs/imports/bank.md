@@ -23,3 +23,8 @@ Bank
 
 - kode_bank : required|string|max:10
 - nama_bank : required|string|max:255
+
+### Data Map
+
+- kode_bank : code
+- nama_bank : name

@@ -38,3 +38,9 @@ Bank
 - nama_bank : nullable|string
 - nomor_rekening : required|numeric
 - atas_nama : required|string|max:255
+
+### Data Map
+
+- kode_bank : get bank's id by bank's code
+- nomor_rekening : account_number
+- atas_nama : by_name
