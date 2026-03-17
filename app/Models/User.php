@@ -8,6 +8,7 @@ namespace App\Models;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 use Laravolt\Platform\Models\User as BaseUser;
 use Laravolt\Suitable\AutoFilter;
 use Laravolt\Suitable\AutoSearch;
@@ -21,8 +22,7 @@ final class User extends BaseUser
     use AutoFilter, AutoSearch, AutoSort;
 
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
-    // use \Laravel\Sanctum\HasApiTokens;
+    use HasApiTokens, HasFactory, Notifiable;
 
     /**
      * The attributes that are mass assignable.
