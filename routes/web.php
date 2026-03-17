@@ -46,6 +46,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
     Route::middleware(ProductView::class)->group(function (): void {
         Route::get('products/export', [ProductController::class, 'export'])->name('products.export');
+        Route::get('products/template', [ProductController::class, 'template'])->name('products.template');
+        Route::post('products/import', [ProductController::class, 'import'])->name('products.import');
         Route::resource('products', ProductController::class);
     });
 });

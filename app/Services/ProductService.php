@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Exports\ProductExport;
+use App\Exports\ProductTemplateExport;
+use App\Imports\ProductImport;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
@@ -43,5 +45,15 @@ final class ProductService
         $fileName = "product-{$now}.xlsx";
 
         return Excel::download(new ProductExport, $fileName);
+    }
+
+    public static function template(): BinaryFileResponse
+    {
+        return Excel::download(new ProductTemplateExport, 'products-template.xlsx');
+    }
+
+    public static function import($file): void
+    {
+        Excel::import(new ProductImport, $file);
     }
 }

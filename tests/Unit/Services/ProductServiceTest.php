@@ -2,11 +2,14 @@
 
 declare(strict_types=1);
 
+use App\Exports\ProductTemplateExport;
 use App\Models\Product;
 use App\Services\ProductService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 uses(RefreshDatabase::class);
@@ -93,4 +96,72 @@ test('it_can_export_products', function () {
 
     expect($response)->toBeInstanceOf(BinaryFileResponse::class);
     expect($response->getFile()->getExtension())->toBe('xlsx');
+});
+
+test('it_can_download_products_template', function () {
+    $response = ProductService::template();
+
+    expect($response)->toBeInstanceOf(BinaryFileResponse::class);
+    expect($response->getFile()->getExtension())->toBe('xlsx');
+});
+
+test('it_can_import_products_from_excel_file', function () {
+    Storage::fake('local');
+
+    $initialCount = Product::count();
+
+    $templateFile = 'test_template_import.xlsx';
+    Excel::store(
+        new ProductTemplateExport,
+        $templateFile,
+        'local'
+    );
+
+    $fullPath = Storage::path($templateFile);
+    ProductService::import($fullPath);
+
+    expect(Product::count())->toBeGreaterThan($initialCount);
+});
+
+test('it_can_import_products_from_generated_template', function () {
+    Storage::fake('local');
+
+    Product::factory()->create([
+        'name' => 'TEST_PRODUCT',
+        'type' => 'electronics',
+        'price' => 1500000,
+        'weight' => 500,
+    ]);
+
+    $initialCount = Product::count();
+
+    $templateFile = 'test_import_generated.xlsx';
+    Excel::store(
+        new ProductTemplateExport,
+        $templateFile,
+        'local'
+    );
+
+    $fullPath = Storage::path($templateFile);
+    ProductService::import($fullPath);
+
+    expect(Product::count())->toBeGreaterThanOrEqual($initialCount);
+});
+
+test('it_can_generate_template_and_import_products', function () {
+    Product::factory()->create([
+        'name' => 'TEST_PRODUCT',
+        'type' => 'electronics',
+        'price' => 1500000,
+        'weight' => 500,
+    ]);
+
+    $templateResponse = ProductService::template();
+    $templatePath = $templateResponse->getFile()->getRealPath();
+
+    expect(file_exists($templatePath))->toBeTrue();
+
+    ProductService::import($templatePath);
+
+    expect(Product::where('name', 'TEST_PRODUCT')->exists())->toBeTrue();
 });
