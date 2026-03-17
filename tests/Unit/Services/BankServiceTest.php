@@ -2,13 +2,17 @@
 
 declare(strict_types=1);
 
+use App\Enums\Permission;
 use App\Exports\BankTemplateExport;
 use App\Models\Bank;
+use App\Models\User;
 use App\Services\BankService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
+use Laravolt\Platform\Models\Role;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -19,6 +23,18 @@ beforeEach(function () {
         'name' => 'Test Bank Service',
         'code' => 'SRVC',
     ];
+
+    $user = User::factory()->create();
+    $managePermission = Laravolt\Platform\Models\Permission::firstOrCreate(['name' => Permission::BANK_MANAGE]);
+    $adminRole = Role::firstOrCreate(['name' => 'admin']);
+    $adminRole->permissions()->attach($managePermission);
+    $user->roles()->attach($adminRole);
+
+    Gate::before(function (User $u, string $ability) {
+        return $u->roles->flatMap->permissions->contains('name', $ability);
+    });
+
+    $this->actingAs($user);
 });
 
 test('it_can_save_a_bank', function () {
@@ -152,4 +168,122 @@ test('it_can_generate_template_and_import_banks', function () {
     BankService::import($templatePath);
 
     expect(Bank::where('code', 'TEST02')->exists())->toBeTrue();
+});
+
+test('it_can_search_banks_by_name', function () {
+    Bank::factory()->create([
+        'name' => 'Bank Central Asia',
+        'code' => 'BCA',
+    ]);
+
+    Bank::factory()->create([
+        'name' => 'Bank Mandiri',
+        'code' => 'MDR',
+    ]);
+
+    Bank::factory()->create([
+        'name' => 'Bank Rakyat Indonesia',
+        'code' => 'BRI',
+    ]);
+
+    $request = Request::create('/banks/search', 'GET', ['name' => 'Bank Central Asia']);
+
+    $result = BankService::search($request);
+
+    expect($result)->toHaveCount(1);
+    expect($result->first()->name)->toBe('Bank Central Asia');
+    expect($result->first()->code)->toBe('BCA');
+});
+
+test('it_can_search_banks_by_code', function () {
+    Bank::factory()->create([
+        'name' => 'Bank Central Asia',
+        'code' => 'BCA',
+    ]);
+
+    Bank::factory()->create([
+        'name' => 'Bank Mandiri',
+        'code' => 'MDR',
+    ]);
+
+    Bank::factory()->create([
+        'name' => 'Bank Rakyat Indonesia',
+        'code' => 'BRI',
+    ]);
+
+    $request = Request::create('/banks/search', 'GET', ['code' => 'MDR']);
+
+    $result = BankService::search($request);
+
+    expect($result)->toHaveCount(1);
+    expect($result->first()->name)->toBe('Bank Mandiri');
+    expect($result->first()->code)->toBe('MDR');
+});
+
+test('it_can_search_banks_by_name_and_code', function () {
+    Bank::factory()->create([
+        'name' => 'Bank Central Asia',
+        'code' => 'BCA',
+    ]);
+
+    Bank::factory()->create([
+        'name' => 'Bank Mandiri',
+        'code' => 'MDR',
+    ]);
+
+    Bank::factory()->create([
+        'name' => 'Bank Rakyat Indonesia',
+        'code' => 'BRI',
+    ]);
+
+    $request = Request::create('/banks/search', 'GET', [
+        'name' => 'Bank Central Asia',
+        'code' => 'BCA',
+    ]);
+
+    $result = BankService::search($request);
+
+    expect($result)->toHaveCount(1);
+    expect($result->first()->name)->toBe('Bank Central Asia');
+    expect($result->first()->code)->toBe('BCA');
+});
+
+test('it_returns_all_banks_when_no_search_criteria', function () {
+    Bank::factory()->count(3)->create();
+
+    $request = Request::create('/banks/search', 'GET', []);
+
+    $result = BankService::search($request);
+
+    expect($result)->toHaveCount(3);
+});
+
+test('it_returns_empty_collection_when_no_match_found', function () {
+    Bank::factory()->create([
+        'name' => 'Bank Central Asia',
+        'code' => 'BCA',
+    ]);
+
+    $request = Request::create('/banks/search', 'GET', ['name' => 'Non Existent Bank']);
+
+    $result = BankService::search($request);
+
+    expect($result)->toHaveCount(0);
+});
+
+test('it_ignores_non_searchable_fields', function () {
+    Bank::factory()->create([
+        'name' => 'Bank Central Asia',
+        'code' => 'BCA',
+    ]);
+
+    $request = Request::create('/banks/search', 'GET', [
+        'name' => 'Bank Central Asia',
+        'invalid_field' => 'some_value',
+    ]);
+
+    $result = BankService::search($request);
+
+    expect($result)->toHaveCount(1);
+    expect($result->first()->name)->toBe('Bank Central Asia');
 });

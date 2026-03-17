@@ -9,6 +9,7 @@ use App\Exports\BankExport;
 use App\Exports\BankTemplateExport;
 use App\Imports\BankImport;
 use App\Models\Bank;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Maatwebsite\Excel\Facades\Excel;
@@ -63,5 +64,20 @@ final class BankService
     public static function import($file): void
     {
         Excel::import(new BankImport, $file);
+    }
+
+    public static function search(Request $request): Collection
+    {
+        $searchable = ['name', 'code'];
+
+        $queries = array_intersect_key($request->all(), array_flip($searchable));
+
+        $banks = Bank::query();
+
+        foreach ($queries as $key => $value) {
+            $banks->where($key, $value);
+        }
+
+        return $banks->get();
     }
 }
