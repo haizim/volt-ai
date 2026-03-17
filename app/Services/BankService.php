@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\Permission;
 use App\Exports\BankExport;
 use App\Exports\BankTemplateExport;
 use App\Imports\BankImport;
 use App\Models\Bank;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -16,6 +18,8 @@ final class BankService
 {
     public static function save(Request $request): Bank
     {
+        Gate::authorize(Permission::BANK_MANAGE);
+
         return Bank::create($request->all());
     }
 
@@ -26,6 +30,8 @@ final class BankService
 
     public static function update(Request $request, int $id): Bank
     {
+        Gate::authorize(Permission::BANK_MANAGE);
+
         $bank = Bank::findOrFail($id);
         $bank->update($request->all());
 
@@ -34,6 +40,8 @@ final class BankService
 
     public static function delete(int $id): bool
     {
+        Gate::authorize(Permission::BANK_MANAGE);
+
         $bank = Bank::findOrFail($id);
 
         return $bank->delete();
