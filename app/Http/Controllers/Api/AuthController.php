@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Responses\ApiResponse;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -48,20 +49,16 @@ final class AuthController
     {
         $request->user()->currentAccessToken()->delete();
 
-        return response()->json([
-            'message' => 'Successfully logged out',
-        ]);
+        return ApiResponse::success(null, 'Successfully logged out');
     }
 
     public function user(Request $request): JsonResponse
     {
-        return response()->json([
-            'user' => [
-                'id' => $request->user()->id,
-                'name' => $request->user()->name,
-                'email' => $request->user()->email,
-                'username' => $request->user()->username,
-            ],
-        ]);
+        return ApiResponse::success([
+            'id' => $request->user()->id,
+            'name' => $request->user()->name,
+            'email' => $request->user()->email,
+            'username' => $request->user()->username,
+        ], 'User data retrieved successfully');
     }
 }

@@ -73,8 +73,19 @@ test('it_can_get_authenticated_user', function () {
         ->getJson('/api/user');
 
     $response->assertStatus(200)
-        ->assertJsonPath('user.id', $user->id)
-        ->assertJsonPath('user.email', $user->email);
+        ->assertJsonStructure([
+            'success',
+            'message',
+            'data' => [
+                'id',
+                'name',
+                'email',
+                'username',
+            ],
+        ])
+        ->assertJsonPath('success', true)
+        ->assertJsonPath('data.id', $user->id)
+        ->assertJsonPath('data.email', $user->email);
 });
 
 test('it_cannot_get_authenticated_user_without_token', function () {
@@ -91,6 +102,12 @@ test('it_can_logout', function () {
         ->postJson('/api/logout');
 
     $response->assertStatus(200)
+        ->assertJsonStructure([
+            'success',
+            'message',
+            'data',
+        ])
+        ->assertJsonPath('success', true)
         ->assertJsonPath('message', 'Successfully logged out');
 
     // Verify token is deleted
