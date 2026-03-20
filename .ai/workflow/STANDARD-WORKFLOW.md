@@ -166,7 +166,7 @@ final class {Feature}View
 
 ### 1.7 Livewire Data Table
 
-**File: `app/Http/Livewire/Table/{Feature}Table.php`**
+**File: `app/Livewire/Table/{Feature}Table.php`**
 
 Create TableView class extending `Laravolt\Ui\TableView`:
 ```php
@@ -174,7 +174,7 @@ Create TableView class extending `Laravolt\Ui\TableView`:
 
 declare(strict_types=1);
 
-namespace App\Http\Livewire\Table;
+namespace App\Livewire\Table;
 
 use App\Enums\Permission;
 use App\Models\{Feature};
@@ -525,7 +525,7 @@ When `php artisan test --compact` fails with ArchTest errors:
    grep -L "declare(strict_types=1)" app/Http/Controllers/*.php
    grep -L "declare(strict_types=1)" app/Http/Requests/*.php
    grep -L "declare(strict_types=1)" app/Http/Middleware/*.php
-   grep -L "declare(strict_types=1)" app/Http/Livewire/Table/*.php
+   grep -L "declare(strict_types=1)" app/Livewire/Table/*.php
    grep -L "declare(strict_types=1)" database/factories/*.php
    grep -L "declare(strict_types=1)" database/seeders/*.php
    ```
