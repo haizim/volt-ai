@@ -166,7 +166,23 @@ final class {Feature}View
 
 ### 1.7 Livewire Data Table
 
-**File: `app/Livewire/Table/{Feature}Table.php`**
+**Location: `app/Livewire/Table/{Feature}Table.php`**
+
+⚠️ **Important:** TableView files must be located in `app/Livewire/Table/`, NOT in `app/Http/Livewire/Table/`.
+
+**Migration:** If you have existing TableView files in `app/Http/Livewire/Table/`, move them to the correct location:
+```bash
+# Move single file
+mv app/Http/Livewire/Table/FeatureTable.php app/Livewire/Table/FeatureTable.php
+
+# Move all TableView files
+mv app/Http/Livewire/Table/*.php app/Livewire/Table/
+
+# Update namespace in the file from:
+namespace App\Http\Livewire\Table;
+# to:
+namespace App\Livewire\Table;
+```
 
 Create TableView class extending `Laravolt\Ui\TableView`:
 ```php
@@ -222,7 +238,80 @@ Create standard views:
 - Use `<x-volt-panel>` for content grouping
 - Use `actions` slot for page-level buttons
 - Use Laravolt form builder: `{!! form()->text('field')->label('Label') !!}`
-- Use `<x-volt-link-button>` and `<x-volt-button>` for actions
+- Use Laravolt button components for all form actions (see Form Buttons section below)
+- Use Fomantic UI's "very basic" table class for detail views (see Show View pattern below)
+
+**Index View Pattern:**
+```blade
+<x-volt-app title="{Feature}">
+    @slot('actions')
+        <x-volt-link-button url="{{ route('{feature}.create') }}" icon="plus" label="New" />
+    @endslot
+
+    @livewire(\App\Livewire\Table\{Feature}Table::class)
+</x-volt-app>
+```
+
+**Show View Pattern with "very basic" Table:**
+
+For the `show.blade.php` detail view, use Fomantic UI's "very basic" table class for a clean, simple data display:
+
+```blade
+<x-volt-app title="{Feature} Detail">
+    <x-volt-panel title="Detail">
+        <table class="ui very basic table">
+            <tbody>
+                <tr>
+                    <td><strong>Field 1</strong></td>
+                    <td>{{ $feature->field1 }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Field 2</strong></td>
+                    <td>{{ $feature->field2 }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Created At</strong></td>
+                    <td>{{ $feature->created_at->format('d M Y H:i') }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Updated At</strong></td>
+                    <td>{{ $feature->updated_at->format('d M Y H:i') }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        @if (auth()->user()->can(\App\Enums\Permission::{FEATURE}_MANAGE))
+            <x-volt-link-button url="{{ route('{feature}.edit', $feature->id) }}" icon="edit" label="Edit" />
+        @endif
+        <x-volt-link-button url="{{ route('{feature}.index') }}" icon="arrow left" label="Back" />
+    </x-volt-panel>
+</x-volt-app>
+```
+
+**The "very basic" table class:**
+- Removes borders and padding for a cleaner look
+- Perfect for displaying single entity details in show view
+- Maintains Fomantic UI table structure
+- Best used with `<x-volt-panel>` for proper spacing
+
+**Reusable Form Partial View Pattern (_form):**
+```blade
+{{-- Form fields here --}}
+<x-volt-link-button url="{{ route('{feature}.index') }}" icon="arrow left" label="Cancel" class="secondary" />
+<x-volt-button icon="save" label="Save" />
+```
+
+
+**Form View Pattern (create/edit):**
+```blade
+<x-volt-app title="Create {Feature}">
+    <x-volt-panel title="Form">
+        {!! form()->open()->post()->action(route('{feature}.store')) !!}
+            @include('{feature}._form')
+        {!! form()->close() !!}
+    </x-volt-panel>
+</x-volt-app>
+```
 
 ### 1.9 Routes
 
@@ -399,7 +488,7 @@ Test all service methods:
 - [ ] Create Form Request validation class
 - [ ] Create resource controller
 - [ ] Create authorization middleware
-- [ ] Create Livewire TableView class
+- [ ] Create Livewire TableView class in `app/Livewire/Table/` (NOT in `app/Http/Livewire/Table/`)
 - [ ] Create all Blade views with Laravolt components
 - [ ] Add routes with middleware
 - [ ] Add menu configuration
@@ -436,6 +525,65 @@ return redirect()->back()->with('error', 'Error message');
 {!! form()->bind($model)->put()->action(route('{feature}.update', $model->id)) !!}
 ```
 
+### Form Buttons
+
+**Use Laravolt button components for all form actions:**
+
+```blade
+<!-- Standard Button (for form submission) -->
+<x-volt-button type="submit" icon="save">
+    Save
+</x-volt-button>
+
+<x-volt-button icon="plus" label="Create {Feature}" />
+
+<!-- Link Button (for navigation/external links) -->
+<x-volt-link-button url="{{ route('{feature}.index') }}" icon="arrow left" label="Back" />
+<x-volt-link-button url="{{ route('{feature}.create') }}" icon="plus" label="New" />
+<x-volt-link-button url="{{ route('{feature}.edit', $feature->id) }}" icon="edit" label="Edit" />
+
+<!-- Button with custom class -->
+<x-volt-button class="secondary" icon="cancel">
+    Cancel
+</x-volt-button>
+
+<!-- Link button to external URL -->
+<x-volt-link-button url="https://example.com" icon="external" label="External" target="_blank" />
+```
+
+**When to use each button type:**
+
+- **`<x-volt-button>`** - For form submissions (store, update), inline form actions, cancel buttons, or custom click handlers
+- **`<x-volt-link-button>`** - For navigation, external links, or GET requests
+
+**Complete Form Example:**
+
+```blade
+{{-- _form_.blade.php --}}
+{!! form()->text('field1')->label('Field 1')->required() !!}
+{!! form()->text('field2')->label('Field 2') !!}
+{!! form()->textarea('description')->label('Description') !!}
+
+<x-volt-link-button url="{{ route('{feature}.index') }}" icon="arrow left" label="Cancel" class="secondary" />
+<x-volt-button icon="save" label="Save" />
+```
+
+**Button in Show View:**
+
+```blade
+{{-- show.blade.php --}}
+<x-volt-app title="{Feature} Detail">
+    <x-volt-panel title="Detail">
+        {{-- Content --}}
+
+        <x-volt-link-button url="{{ route('{feature}.index') }}" icon="arrow left" label="Back" />
+        @if (auth()->user()->can(\App\Enums\Permission::{FEATURE}_MANAGE))
+            <x-volt-link-button url="{{ route('{feature}.edit', $feature->id) }}" icon="edit" label="Edit" />
+        @endif
+    </x-volt-panel>
+</x-volt-app>
+```
+
 ### Permission-Based UI
 ```php
 @if (auth()->user()->can(\App\Enums\Permission::{FEATURE}_MANAGE))
@@ -446,6 +594,34 @@ return redirect()->back()->with('error', 'Error message');
 This workflow ensures consistent, maintainable, and fully tested CRUD implementations that follow Laravel and Laravolt best practices.
 
 ## Common Issues & Fixes
+
+### TableView Files in Wrong Location
+
+**Problem:** TableView files located in `app/Http/Livewire/Table/` instead of `app/Livewire/Table/`.
+
+**Fix:** Move files to the correct location and update namespaces:
+```bash
+# Move all TableView files to correct location
+mv app/Http/Livewire/Table/*.php app/Livewire/Table/
+
+# Or move single file
+mv app/Http/Livewire/Table/FeatureTable.php app/Livewire/Table/FeatureTable.php
+```
+
+**Update namespace in each file:**
+```php
+// ❌ WRONG - Old namespace
+namespace App\Http\Livewire\Table;
+
+// ✅ CORRECT - New namespace
+namespace App\Livewire\Table;
+```
+
+**Verify:** After moving, ensure all imports are updated:
+```php
+// In views and other files using the TableView
+use App\Livewire\Table\FeatureTable;  // ✅ CORRECT
+```
 
 ### ArchTest Failures - "Expecting X to be final"
 
