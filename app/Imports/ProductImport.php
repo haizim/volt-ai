@@ -16,12 +16,6 @@ final class ProductImport implements SkipsEmptyRows, ToCollection, WithHeadingRo
     public function collection(Collection $collection): void
     {
         foreach ($collection as $row) {
-            // Use Data Map from documentation:
-            // nama_produk -> name
-            // tipe -> type
-            // harga -> price
-            // berat -> weight
-
             Product::updateOrCreate(
                 ['name' => $row['nama_produk']],
                 [
@@ -40,7 +34,6 @@ final class ProductImport implements SkipsEmptyRows, ToCollection, WithHeadingRo
     public function rules(): array
     {
         return [
-            // Use Excel column names from documentation
             'nama_produk' => 'required|string|max:255',
             'tipe' => 'required|string|max:255',
             'harga' => 'required|numeric',

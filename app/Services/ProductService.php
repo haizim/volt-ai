@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Exports\ProductExport;
+use App\Exports\ProductTemplateExport;
+use App\Imports\ProductImport;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -49,5 +52,15 @@ final class ProductService
         $fileName = "product-{$now}.xlsx";
 
         return Excel::download(new ProductExport, $fileName);
+    }
+
+    public static function template(): BinaryFileResponse
+    {
+        return Excel::download(new ProductTemplateExport, 'product-template.xlsx');
+    }
+
+    public static function import(UploadedFile|string $file): void
+    {
+        Excel::import(new ProductImport, $file);
     }
 }

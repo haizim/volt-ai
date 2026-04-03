@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ProductImportRequest;
 use App\Http\Requests\ProductRequest;
 use App\Models\Product;
 use App\Services\ProductService;
@@ -64,5 +65,18 @@ final class ProductController
     public function export(): BinaryFileResponse
     {
         return ProductService::export();
+    }
+
+    public function template(): BinaryFileResponse
+    {
+        return ProductService::template();
+    }
+
+    public function import(ProductImportRequest $request): RedirectResponse
+    {
+        ProductService::import($request->file('file'));
+
+        return redirect()->route('product.index')
+            ->withSuccess('Product berhasil diimport');
     }
 }

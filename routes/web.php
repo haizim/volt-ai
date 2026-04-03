@@ -28,6 +28,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
     Route::middleware(ProductView::class)->group(function (): void {
         Route::get('product/export', [ProductController::class, 'export'])->name('product.export');
+        Route::get('product/template', [ProductController::class, 'template'])->name('product.template');
+        Route::post('product/import', [ProductController::class, 'import'])->name('product.import');
         Route::resource('product', ProductController::class);
     });
 });

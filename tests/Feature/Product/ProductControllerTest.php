@@ -3,12 +3,16 @@
 declare(strict_types=1);
 
 use App\Enums\Permission;
+use App\Exports\ProductTemplateExport;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 use Laravolt\Platform\Models\Permission as LaravoltPermission;
 use Laravolt\Platform\Models\Role;
+use Maatwebsite\Excel\Facades\Excel;
 
 beforeEach(function (): void {
     $this->user = User::factory()->create();
@@ -149,4 +153,98 @@ test('it cannot export products without view permission', function (): void {
     $this->actingAs($this->user)
         ->get(route('product.export'))
         ->assertStatus(401);
+});
+
+test('it can download product template with view permission', function (): void {
+    $this->user->assignRole($this->viewerRole);
+
+    $this->actingAs($this->user)
+        ->get(route('product.template'))
+        ->assertSuccessful()
+        ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+});
+
+test('it cannot download product template without view permission', function (): void {
+    $this->actingAs($this->user)
+        ->get(route('product.template'))
+        ->assertStatus(401);
+});
+
+test('it can see import section with manage permission', function (): void {
+    $this->user->assignRole($this->managerRole);
+
+    $this->actingAs($this->user)
+        ->get(route('product.index'))
+        ->assertSuccessful()
+        ->assertSee('Import');
+});
+
+test('it cannot see import section without manage permission', function (): void {
+    $this->user->assignRole($this->viewerRole);
+
+    $this->actingAs($this->user)
+        ->get(route('product.index'))
+        ->assertSuccessful()
+        ->assertDontSee('Import');
+});
+
+test('it can import products with valid file', function (): void {
+    $this->user->assignRole($this->managerRole);
+
+    Storage::fake('local');
+
+    $templateFile = 'test_import_product.xlsx';
+    Excel::store(new ProductTemplateExport, $templateFile, 'local');
+
+    $file = new UploadedFile(
+        Storage::path($templateFile),
+        'product-import.xlsx',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        null,
+        true
+    );
+
+    $this->actingAs($this->user)
+        ->post(route('product.import'), ['file' => $file])
+        ->assertRedirect(route('product.index'))
+        ->assertSessionHasNoErrors();
+});
+
+test('it cannot import products without manage permission', function (): void {
+    $this->user->assignRole($this->viewerRole);
+
+    Storage::fake('local');
+
+    $templateFile = 'test_import_product_no_perm.xlsx';
+    Excel::store(new ProductTemplateExport, $templateFile, 'local');
+
+    $file = new UploadedFile(
+        Storage::path($templateFile),
+        'product-import.xlsx',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        null,
+        true
+    );
+
+    $this->actingAs($this->user)
+        ->post(route('product.import'), ['file' => $file])
+        ->assertForbidden();
+});
+
+test('it cannot import products with invalid file format', function (): void {
+    $this->user->assignRole($this->managerRole);
+
+    $file = UploadedFile::fake()->create('products.pdf', 100, 'application/pdf');
+
+    $this->actingAs($this->user)
+        ->post(route('product.import'), ['file' => $file])
+        ->assertSessionHasErrors(['file']);
+});
+
+test('it cannot import products without file', function (): void {
+    $this->user->assignRole($this->managerRole);
+
+    $this->actingAs($this->user)
+        ->post(route('product.import'), [])
+        ->assertSessionHasErrors(['file']);
 });

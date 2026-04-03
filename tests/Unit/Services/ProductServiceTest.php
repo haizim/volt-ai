@@ -2,9 +2,12 @@
 
 declare(strict_types=1);
 
+use App\Exports\ProductTemplateExport;
 use App\Models\Product;
 use App\Services\ProductService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 test('it can save a product', function (): void {
@@ -78,4 +81,42 @@ test('it can export products', function (): void {
 
     expect($response)->toBeInstanceOf(BinaryFileResponse::class)
         ->and($response->getFile()->getExtension())->toBe('xlsx');
+});
+
+test('it can download product template', function (): void {
+    $response = ProductService::template();
+
+    expect($response)->toBeInstanceOf(BinaryFileResponse::class)
+        ->and($response->getFile()->getExtension())->toBe('xlsx');
+});
+
+test('it can import products from excel file', function (): void {
+    Storage::fake('local');
+
+    $initialCount = Product::count();
+
+    $templateFile = 'test_template_import.xlsx';
+    Excel::store(new ProductTemplateExport, $templateFile, 'local');
+
+    ProductService::import(Storage::path($templateFile));
+
+    expect(Product::count())->toBeGreaterThan($initialCount);
+});
+
+test('it can generate template and import products', function (): void {
+    Product::factory()->create([
+        'name' => 'Test Produk',
+        'type' => 'Electronics',
+        'price' => 10000,
+        'weight' => 500,
+    ]);
+
+    $templateResponse = ProductService::template();
+    $templatePath = $templateResponse->getFile()->getRealPath();
+
+    expect(file_exists($templatePath))->toBeTrue();
+
+    ProductService::import($templatePath);
+
+    expect(Product::where('name', 'Test Produk')->exists())->toBeTrue();
 });
