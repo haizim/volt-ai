@@ -11,5 +11,8 @@ use BenSampo\Enum\Enum;
  */
 final class Permission extends Enum
 {
-    // Add your permissions here
+    // Product
+    const PRODUCT_VIEW = 'product:view';
+
+    const PRODUCT_MANAGE = 'product:manage';
 }

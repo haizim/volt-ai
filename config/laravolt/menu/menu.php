@@ -1,10 +1,17 @@
 <?php
 
+use App\Enums\Permission;
+
 return [
     'Menu' => [
         'order' => 1,
         'menu' => [
-            // Add your menu items here
+            'Products' => [
+                'route' => 'product.index',
+                'active' => 'product/*',
+                'icon' => 'gift',
+                'permissions' => [Permission::PRODUCT_VIEW],
+            ],
         ],
     ],
 ];
