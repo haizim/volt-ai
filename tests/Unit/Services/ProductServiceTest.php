@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Models\Product;
 use App\Services\ProductService;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 test('it can save a product', function (): void {
     $request = Request::create('/product', 'POST', [
@@ -68,4 +69,13 @@ test('it can delete a product', function (): void {
     ProductService::delete($product->id);
 
     $this->assertSoftDeleted('products', ['id' => $product->id]);
+});
+
+test('it can export products', function (): void {
+    Product::factory()->count(3)->create();
+
+    $response = ProductService::export();
+
+    expect($response)->toBeInstanceOf(BinaryFileResponse::class)
+        ->and($response->getFile()->getExtension())->toBe('xlsx');
 });

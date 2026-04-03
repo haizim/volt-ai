@@ -9,8 +9,9 @@ use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
+use Maatwebsite\Excel\Concerns\WithTitle;
 
-final class ProductExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
+final class ProductExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping, WithTitle
 {
     public function query()
     {
@@ -30,5 +31,10 @@ final class ProductExport implements FromQuery, ShouldAutoSize, WithHeadings, Wi
     public function headings(): array
     {
         return ['Nama Produk', 'Tipe', 'Harga', 'Berat'];
+    }
+
+    public function title(): string
+    {
+        return 'Products';
     }
 }

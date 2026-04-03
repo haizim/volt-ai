@@ -26,8 +26,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
     Route::post('/users', [UsersController::class, 'store'])->name('users.store');
 
-    Route::resource('product', ProductController::class)
-        ->middleware(ProductView::class);
+    Route::middleware(ProductView::class)->group(function (): void {
+        Route::get('product/export', [ProductController::class, 'export'])->name('product.export');
+        Route::resource('product', ProductController::class);
+    });
 });
 
 include __DIR__.'/auth.php';

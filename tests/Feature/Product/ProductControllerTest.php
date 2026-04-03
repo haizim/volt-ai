@@ -133,3 +133,20 @@ test('it can delete a product', function (): void {
 
     $this->assertSoftDeleted('products', ['id' => $product->id]);
 });
+
+test('it can export products with view permission', function (): void {
+    $this->user->assignRole($this->viewerRole);
+
+    Product::factory()->count(3)->create();
+
+    $this->actingAs($this->user)
+        ->get(route('product.export'))
+        ->assertSuccessful()
+        ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+});
+
+test('it cannot export products without view permission', function (): void {
+    $this->actingAs($this->user)
+        ->get(route('product.export'))
+        ->assertStatus(401);
+});

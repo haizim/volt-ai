@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Services\ProductService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 final class ProductController
 {
@@ -58,5 +59,10 @@ final class ProductController
 
         return redirect()->route('product.index')
             ->withSuccess('Product deleted successfully.');
+    }
+
+    public function export(): BinaryFileResponse
+    {
+        return ProductService::export();
     }
 }
