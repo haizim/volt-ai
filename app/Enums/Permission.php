@@ -9,10 +9,4 @@ use BenSampo\Enum\Enum;
 /**
  * @extends Enum<string>
  */
-final class Permission extends Enum
-{
-    // Product
-    const PRODUCT_VIEW = 'product:view';
-
-    const PRODUCT_MANAGE = 'product:manage';
-}
+final class Permission extends Enum {}

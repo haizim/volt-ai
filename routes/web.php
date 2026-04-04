@@ -3,9 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\HomeController;
-use App\Http\Controllers\ProductController;
 use App\Http\Controllers\UsersController;
-use App\Http\Middleware\ProductView;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -25,13 +23,6 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/home', HomeController::class)->name('home');
 
     Route::post('/users', [UsersController::class, 'store'])->name('users.store');
-
-    Route::middleware(ProductView::class)->group(function (): void {
-        Route::get('product/export', [ProductController::class, 'export'])->name('product.export');
-        Route::get('product/template', [ProductController::class, 'template'])->name('product.template');
-        Route::post('product/import', [ProductController::class, 'import'])->name('product.import');
-        Route::resource('product', ProductController::class);
-    });
 });
 
 include __DIR__.'/auth.php';

@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\ProductController;
 use Illuminate\Support\Facades\Route;
 
 Route::name('api.')->group(function (): void {
@@ -12,7 +11,5 @@ Route::name('api.')->group(function (): void {
     Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/user', [AuthController::class, 'user'])->name('user');
         Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-
-        Route::apiResource('product', ProductController::class);
     });
 });
