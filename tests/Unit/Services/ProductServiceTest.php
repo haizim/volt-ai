@@ -120,3 +120,73 @@ test('it can generate template and import products', function (): void {
 
     expect(Product::where('name', 'Test Produk')->exists())->toBeTrue();
 });
+
+// --- Search ---
+
+test('it can search products by name', function (): void {
+    Product::factory()->create(['name' => 'Laptop Gaming', 'type' => 'Electronics']);
+    Product::factory()->create(['name' => 'Mouse Wireless', 'type' => 'Electronics']);
+
+    $request = Request::create('/api/product', 'GET', ['name' => 'Laptop Gaming']);
+    $result = ProductService::search($request);
+
+    expect($result)->toHaveCount(1)
+        ->and($result->first()->name)->toBe('Laptop Gaming');
+});
+
+test('it can search products by type', function (): void {
+    Product::factory()->create(['name' => 'Laptop Gaming', 'type' => 'Electronics']);
+    Product::factory()->create(['name' => 'Kaos Polos', 'type' => 'Fashion']);
+
+    $request = Request::create('/api/product', 'GET', ['type' => 'Fashion']);
+    $result = ProductService::search($request);
+
+    expect($result)->toHaveCount(1)
+        ->and($result->first()->name)->toBe('Kaos Polos');
+});
+
+test('it can search products by multiple fields', function (): void {
+    Product::factory()->create(['name' => 'Laptop Gaming', 'type' => 'Electronics']);
+    Product::factory()->create(['name' => 'Laptop Basic', 'type' => 'Electronics']);
+    Product::factory()->create(['name' => 'Kaos Polos', 'type' => 'Fashion']);
+
+    $request = Request::create('/api/product', 'GET', [
+        'name' => 'Laptop Gaming',
+        'type' => 'Electronics',
+    ]);
+    $result = ProductService::search($request);
+
+    expect($result)->toHaveCount(1)
+        ->and($result->first()->name)->toBe('Laptop Gaming');
+});
+
+test('it returns all products when no search criteria', function (): void {
+    Product::factory()->count(3)->create();
+
+    $request = Request::create('/api/product', 'GET', []);
+    $result = ProductService::search($request);
+
+    expect($result)->toHaveCount(3);
+});
+
+test('it returns empty collection when no match found', function (): void {
+    Product::factory()->create(['name' => 'Laptop Gaming']);
+
+    $request = Request::create('/api/product', 'GET', ['name' => 'Non Existent']);
+    $result = ProductService::search($request);
+
+    expect($result)->toHaveCount(0);
+});
+
+test('it ignores non searchable fields', function (): void {
+    Product::factory()->create(['name' => 'Laptop Gaming', 'type' => 'Electronics']);
+
+    $request = Request::create('/api/product', 'GET', [
+        'name' => 'Laptop Gaming',
+        'price' => 99999,
+    ]);
+    $result = ProductService::search($request);
+
+    expect($result)->toHaveCount(1)
+        ->and($result->first()->name)->toBe('Laptop Gaming');
+});

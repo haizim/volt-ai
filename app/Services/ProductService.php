@@ -8,6 +8,7 @@ use App\Exports\ProductExport;
 use App\Exports\ProductTemplateExport;
 use App\Imports\ProductImport;
 use App\Models\Product;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -62,5 +63,20 @@ final class ProductService
     public static function import(UploadedFile|string $file): void
     {
         Excel::import(new ProductImport, $file);
+    }
+
+    public static function search(Request $request): Collection
+    {
+        $searchable = ['name', 'type'];
+
+        $queries = array_intersect_key($request->all(), array_flip($searchable));
+
+        $query = Product::query();
+
+        foreach ($queries as $key => $value) {
+            $query->where($key, $value);
+        }
+
+        return $query->get();
     }
 }
