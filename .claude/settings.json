@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /home/haizim/me/project/volt-ai-blank && vendor/bin/pint --dirty --format agent 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}

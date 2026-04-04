@@ -2,18 +2,104 @@
 
 Based on the established patterns in the contact management implementation, these guidelines define the standard workflow for creating complete CRUD features in the Laravolt ecosystem.
 
+## Role Separation
+
+**CRITICAL:** This workflow has clear role separation between USER and AI AGENT:
+
+### USER Responsibilities:
+- ✅ Create CRUD documentation at `docs/crud/{feature}.md`
+- ✅ Define model name, table fields, validation rules, permissions, and table columns
+- ✅ Provide complete specification before AI implementation
+
+### AI AGENT Responsibilities:
+- ✅ Read and understand the user-created documentation
+- ✅ Write failing tests FIRST (Red)
+- ✅ Implement CRUD feature to make tests pass (Green)
+- ✅ Refactor while keeping tests green
+- ❌ **NEVER create the CRUD documentation**
+
+**Workflow Rule:** Documentation is the SINGLE SOURCE OF TRUTH. AI agent implements EXACTLY what is specified in the documentation.
+
 ## Workflow Overview
 
 The standard workflow follows **Test Driven Development (TDD)** with a **Red → Green → Refactor** cycle:
 
-1. **Red** - Write failing tests that define the expected behavior
-2. **Green** - Write the minimum implementation to make tests pass
-3. **Refactor** - Clean up while keeping tests green
+1. **Documentation (USER)** - User creates CRUD specification document at `docs/crud/{feature}.md`
+2. **Red (AI AGENT)** - AI agent reads documentation and writes failing tests that define expected behavior
+3. **Green (AI AGENT)** - AI agent writes minimum implementation to make all tests pass
+4. **Refactor (AI AGENT)** - AI agent cleans up code while keeping tests green
+
+**AI Agent Workflow:**
+```
+User Request: "Create CRUD for {feature}"
+    ↓
+AI Agent: Check if docs/crud/{feature}.md exists
+    ↓ (if NO)
+    → Ask user to create documentation first
+    ↓ (if YES)
+AI Agent: Read docs/crud/{feature}.md
+    ↓
+AI Agent: Extract requirements (fields, validation, permissions, table columns, menu)
+    ↓
+AI Agent: Write failing tests (Red)
+    ↓
+AI Agent: Implement to pass tests (Green)
+    ↓
+AI Agent: Refactor & cleanup
+```
 
 Each phase maps to a commit:
 1. **Test Commit** - Failing tests that define the feature contract
 2. **Implementation Commit** - Minimum code to pass all tests
 3. **Refactor Commit** - Cleanup and polish (optional)
+
+---
+
+## Phase 0: Documentation (USER)
+
+> **Goal:** User creates a complete specification document that the AI agent will use as the single source of truth.
+
+**File:** `docs/crud/{feature}.md`
+
+```markdown
+# {Feature Name}
+
+## Model
+- Table: {table_name}
+- Belongs to: User (user_id)
+- Soft Deletes: yes/no
+
+## Fields
+| Field       | Type         | Required | Rules            | Label       |
+|-------------|--------------|----------|------------------|-------------|
+| name        | string(255)  | yes      | max:255          | Nama        |
+| email       | string(255)  | yes      | email, unique    | Email       |
+| phone       | string(20)   | no       |                  | Telepon     |
+| status      | enum         | yes      | in:active,block  | Status      |
+
+## Permissions
+- View: {feature}:view
+- Manage: {feature}:manage
+
+## Menu
+- Label: {Feature Name}
+- Icon: {icon-name}
+- Order: (under which group)
+
+## Table Columns (Index)
+| Column      | Type           | Sortable |
+|-------------|----------------|----------|
+| name        | Text           | yes      |
+| email       | Text           | yes      |
+| status      | Label (mapped) | no       |
+| created_at  | Date           | yes      |
+
+## Searchable Fields
+- name
+- email
+```
+
+**CRITICAL:** AI agent must NOT proceed without this document. If the document does not exist, ask the user to create it first.
 
 ---
 
