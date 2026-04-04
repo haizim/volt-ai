@@ -4,13 +4,131 @@ Based on the established patterns in the contact management implementation, thes
 
 ## Workflow Overview
 
-The standard workflow follows a **three-commit approach**:
-1. **Feature Implementation Commit** - Complete CRUD functionality with all necessary components
-2. **Testing Commit** - Comprehensive test coverage for the implemented feature
+The standard workflow follows **Test Driven Development (TDD)** with a **Red → Green → Refactor** cycle:
 
-## Phase 1: Feature Implementation (Commit 1)
+1. **Red** - Write failing tests that define the expected behavior
+2. **Green** - Write the minimum implementation to make tests pass
+3. **Refactor** - Clean up while keeping tests green
 
-### 1.1 Permissions & Authorization
+Each phase maps to a commit:
+1. **Test Commit** - Failing tests that define the feature contract
+2. **Implementation Commit** - Minimum code to pass all tests
+3. **Refactor Commit** - Cleanup and polish (optional)
+
+---
+
+## Phase 1: Write Failing Tests (Red)
+
+> **Goal:** Define the expected behavior through tests BEFORE writing any implementation. All tests should fail at this stage.
+
+### 1.1 Test Environment Setup
+
+**File: `.env.testing`**
+- Create testing-specific environment configuration
+- Use separate test database
+- Configure appropriate cache and session drivers
+
+**Icon Stubs:**
+
+**Directory: `tests/fixtures/icons/duotone/`**
+
+Create minimal SVG stubs for icons used in tests:
+```svg
+<svg></svg>
+```
+
+**Pattern:** Create stubs for all icons referenced in views and components.
+
+### 1.2 Feature Tests
+
+**File: `tests/Feature/{Feature}/{Feature}ControllerTest.php`**
+
+Write comprehensive feature tests covering all expected behaviors:
+
+**Permission Testing:**
+- Access with proper permissions should succeed
+- Access without permissions should fail (401)
+- Role-based permission checking
+
+**CRUD Operations:**
+- `test_it_can_access_{feature}_index_with_view_permission`
+- `test_it_cannot_access_{feature}_index_without_view_permission`
+- `test_it_can_access_{feature}_create_with_manage_permission`
+- `test_it_can_store_a_{feature}`
+- `test_it_can_display_{feature}_detail`
+- `test_it_can_display_{feature}_edit_page`
+- `test_it_can_update_a_{feature}`
+- `test_it_can_delete_a_{feature}`
+
+**Test Setup Pattern:**
+```php
+beforeEach(function (): void {
+    $this->user = User::factory()->create();
+    
+    // Create permissions in DB
+    $this->viewPermission = LaravoltPermission::firstOrCreate(['name' => Permission::{FEATURE}_VIEW]);
+    $this->managePermission = LaravoltPermission::firstOrCreate(['name' => Permission::{FEATURE}_MANAGE]);
+    
+    // Create roles and assign permissions
+    $this->viewerRole = Role::firstOrCreate(['name' => '{Feature}Viewer']);
+    $this->viewerRole->addPermission($this->viewPermission);
+
+    $this->managerRole = Role::firstOrCreate(['name' => '{Feature}Manager']);
+    $this->managerRole->addPermission($this->viewPermission);
+    $this->managerRole->addPermission($this->managePermission);
+
+    // Define Gates manually
+    Gate::define(Permission::{FEATURE}_VIEW, function ($user) {
+        return $user->hasPermission(Permission::{FEATURE}_VIEW);
+    });
+    Gate::define(Permission::{FEATURE}_MANAGE, function ($user) {
+        return $user->hasPermission(Permission::{FEATURE}_MANAGE);
+    });
+    
+    $this->withoutMiddleware(ValidateCsrfToken::class);
+});
+```
+
+### 1.3 Unit Tests — Model
+
+**File: `tests/Unit/Models/{Feature}Test.php`**
+
+Test model characteristics before the model exists:
+- Relationship definitions if needed
+- Fillable attributes
+- Soft delete functionality
+- Custom methods or scopes
+
+### 1.4 Unit Tests — Service
+
+**File: `tests/Unit/Services/{Feature}ServiceTest.php`**
+
+Test all service methods before the service exists:
+- `test_it_can_save_a_{feature}`
+- `test_it_can_get_a_{feature}_by_id`
+- `test_it_cannot_get_{feature}_belonging_to_another_user` : only if required user_id in that table
+- `test_it_can_update_a_{feature}`
+- `test_it_can_delete_a_{feature}`
+
+**Pattern:** Test business logic, user scoping, and edge cases.
+
+### 1.5 Verify Tests Are Failing
+
+Run tests to confirm all newly written tests fail (expected at this stage):
+
+```bash
+php artisan test --compact
+```
+
+> All new tests should show as **FAILED**. If a test passes without implementation, the test is not testing the right thing.
+
+---
+
+## Phase 2: Write Minimum Implementation (Green)
+
+> **Goal:** Write the minimum code necessary to make all failing tests pass. Do not add features beyond what the tests require.
+
+### 2.1 Permissions & Authorization
 
 **File: `app/Enums/Permission.php`**
 
@@ -23,7 +141,7 @@ const {FEATURE}_MANAGE = '{feature}:manage';
 
 **Pattern:** Use `{FEATURE}:view` for read access and `{FEATURE}:manage` for create/update/delete access.
 
-### 1.2 Database Layer
+### 2.2 Database Layer
 
 **Migration:** Create table with proper schema
 - Use `php artisan make:migration` command
@@ -36,7 +154,7 @@ const {FEATURE}_MANAGE = '{feature}:manage';
 - Add `declare(strict_types=1);` at the top
 - Add `AutoFilter`, `AutoSearch`, `AutoSort` traits from Laravolt Suitable
 - Define `$fillable` properties for mass assignment
-- Add relationships to other models if needed (e.g., `belongsTo(User::class)`)
+- Add relationships to other models only if needed (e.g., `belongsTo(User::class)`)
 
 **Factory:** Create database factory
 - **CRITICAL:** Must be marked as `final class`
@@ -45,7 +163,7 @@ const {FEATURE}_MANAGE = '{feature}:manage';
 - Define realistic dummy data using Faker
 - Associate with parent models where appropriate
 
-### 1.3 Service Layer
+### 2.3 Service Layer
 
 **File: `app/Services/{Feature}Service.php`**
 
@@ -71,7 +189,7 @@ final class {Feature}Service
 
 **Pattern:** Service layer handles all data operations and user-scoped queries. Controllers remain thin.
 
-### 1.4 Request Validation
+### 2.4 Request Validation
 
 **File: `app/Http/Requests/{Feature}Request.php`**
 
@@ -98,7 +216,7 @@ final class {Feature}Request extends FormRequest
 - Comprehensive validation rules
 - Custom error messages if needed
 
-### 1.5 Controller Layer
+### 2.5 Controller Layer
 
 **File: `app/Http/Controllers/{Feature}Controller.php`**
 
@@ -132,7 +250,7 @@ final class {Feature}Controller
 - Add `declare(strict_types=1);` at the top
 - Inject service layer and return proper responses with flash messages
 
-### 1.6 Authorization Middleware
+### 2.6 Authorization Middleware
 
 **File: `app/Http/Middleware/{Feature}View.php`**
 
@@ -164,25 +282,11 @@ final class {Feature}View
 
 **CRITICAL:** Must be marked as `final class` with `declare(strict_types=1);`
 
-### 1.7 Livewire Data Table
+### 2.7 Livewire Data Table
 
 **Location: `app/Livewire/Table/{Feature}Table.php`**
 
 ⚠️ **Important:** TableView files must be located in `app/Livewire/Table/`, NOT in `app/Http/Livewire/Table/`.
-
-**Migration:** If you have existing TableView files in `app/Http/Livewire/Table/`, move them to the correct location:
-```bash
-# Move single file
-mv app/Http/Livewire/Table/FeatureTable.php app/Livewire/Table/FeatureTable.php
-
-# Move all TableView files
-mv app/Http/Livewire/Table/*.php app/Livewire/Table/
-
-# Update namespace in the file from:
-namespace App\Http\Livewire\Table;
-# to:
-namespace App\Livewire\Table;
-```
 
 Create TableView class extending `Laravolt\Ui\TableView`:
 ```php
@@ -210,11 +314,11 @@ final class {Feature}Table extends TableView
 - **Avatar:** `Avatar::make('email', 'Avatar')`
 - **Boolean:** `Boolean::make('is_active')`
 - **Button:** `Button::make('permalink', 'Info')->label('Profile')->icon('external link')`
-- * *Dynamic closure:* `Button::make(fn ($user) => route('users.show', $user['id']))`
+  * *Dynamic closure:* `Button::make(fn ($user) => route('users.show', $user['id']))`
 - **Checkall:** `Checkall::make('id')`
 - **Date & Time:** `Date::make('created_at')`, `DateTime::make('created_at')`
 - **HTML & Raw:** * `Html::make('bio')` *(For executing WYSIWYG tags safely)*
-- * `Raw::make(fn ($user) => $user->roles->implode('name', ', '), 'Roles')` *(Custom logic)*
+  * `Raw::make(fn ($user) => $user->roles->implode('name', ', '), 'Roles')` *(Custom logic)*
 - **ID & Row Number:** `Id::make()`, `RowNumber::make()`
 - **Image:** `Image::make('profile_picture')->height(50)->width(50)->alt('Pic')`
 - **Label:** `Label::make('status')->addClass('green')->map(['active' => 'green', 'banned' => 'red'])`
@@ -222,7 +326,7 @@ final class {Feature}Table extends TableView
 - **Restful Buttons (CRUD):** `RestfulButton::make('users')->only('show', 'edit')->except('destroy')`
 - **URL & View:** `Url::make('website')`, `View::make('profile')`
 
-### 1.8 Views
+### 2.8 Views
 
 **Directory:** `resources/views/{feature}/`
 
@@ -313,7 +417,7 @@ For the `show.blade.php` detail view, use Fomantic UI's "very basic" table class
 </x-volt-app>
 ```
 
-### 1.9 Routes
+### 2.9 Routes
 
 **File: `routes/web.php`**
 
@@ -323,7 +427,7 @@ Route::resource('{feature}', {Feature}Controller::class)
     ->middleware({Feature}View::class);
 ```
 
-### 1.10 Menu Configuration
+### 2.10 Menu Configuration
 
 **File: `config/laravolt/menu/menu.php`**
 
@@ -337,84 +441,29 @@ Add menu item with proper permissions:
 ],
 ```
 
-## Phase 2: Testing Implementation (Commit 2)
+### 2.11 Verify All Tests Pass
 
-### 2.1 Test Environment Setup
+Run all tests and confirm everything passes (Green):
 
-**File: `.env.testing`**
-- Create testing-specific environment configuration
-- Use separate test database
-- Configure appropriate cache and session drivers
-
-### 2.2 Test Fixtures
-
-**Directory: `tests/fixtures/icons/duotone/`**
-
-Create minimal SVG stubs for icons used in tests:
-```svg
-<svg></svg>
+```bash
+php artisan test --compact
 ```
 
-**Pattern:** Create stubs for all icons referenced in views and components.
+> All tests must pass before proceeding. If any test fails, fix the implementation — **do not modify the test** unless the test itself was written incorrectly.
 
-### 2.3 Feature Tests
+---
 
-**File: `tests/Feature/{Feature}/{Feature}ControllerTest.php`**
+## Phase 3: Refactor (Refactor)
 
-Create comprehensive feature tests covering:
+> **Goal:** Improve the code quality without changing behavior. Tests must remain green throughout.
 
-**Permission Testing:**
-- Access with proper permissions should succeed
-- Access without permissions should fail (401)
-- Role-based permission checking
+- Extract duplicated logic
+- Improve naming clarity
+- Optimize queries (eager loading, N+1 prevention)
+- Run code formatting: `vendor/bin/pint --dirty --format agent`
+- Re-run tests after every refactor step: `php artisan test --compact`
 
-**CRUD Operations:**
-- `test_it_can_access_{feature}_index_with_view_permission`
-- `test_it_cannot_access_{feature}_index_without_view_permission`
-- `test_it_can_access_{feature}_create_with_manage_permission`
-- `test_it_can_store_a_{feature}`
-- `test_it_can_display_{feature}_detail`
-- `test_it_can_display_{feature}_edit_page`
-- `test_it_can_update_a_{feature}`
-- `test_it_can_delete_a_{feature}`
-
-**Test Setup Pattern:**
-```php
-beforeEach(function (): void {
-    $this->user = User::factory()->create();
-    
-    // Create permissions in DB
-    $this->viewPermission = LaravoltPermission::firstOrCreate(['name' => Permission::{FEATURE}_VIEW]);
-    $this->managePermission = LaravoltPermission::firstOrCreate(['name' => Permission::{FEATURE}_MANAGE]);
-    
-    // Create roles and assign permissions
-    // Define Gates manually
-    $this->withoutMiddleware(ValidateCsrfToken::class);
-});
-```
-
-### 2.4 Unit Tests - Model
-
-**File: `tests/Unit/Models/{Feature}Test.php`**
-
-Test model characteristics:
-- Relationship definitions
-- Fillable attributes
-- Soft delete functionality
-- Custom methods or scopes
-
-### 2.5 Unit Tests - Service
-
-**File: `tests/Unit/Services/{Feature}ServiceTest.php`**
-
-Test all service methods:
-- `test_it_can_save_a_{feature}`
-- `test_it_can_get_a_{feature}_by_id`
-- `test_it_cannot_get_{feature}_belonging_to_another_user`
-- `test_it_can_update_a_{feature}`
-- `test_it_can_delete_a_{feature}`
-
-**Pattern:** Test business logic, user scoping, and edge cases.
+---
 
 ## Testing Standards
 
@@ -431,10 +480,12 @@ Test all service methods:
 
 ### Coverage Goals
 - Test all controller methods
-- Test all service methods  
+- Test all service methods
 - Test permission checks
 - Test user data scoping
 - Test database operations
+
+---
 
 ## Code Quality Standards
 
@@ -477,9 +528,20 @@ Test all service methods:
 - Index frequently queried columns
 - Use soft deletes for data retention
 
+---
+
 ## Workflow Checklist
 
-### Phase 1: Feature Implementation
+### Phase 1: Write Failing Tests (Red)
+- [ ] Create `.env.testing` configuration
+- [ ] Create icon fixture stubs
+- [ ] Write feature test with permission tests (expect failures)
+- [ ] Write feature test with CRUD operation tests (expect failures)
+- [ ] Write unit test for model (expect failures)
+- [ ] Write unit test for service (expect failures)
+- [ ] Confirm all new tests **FAIL** with `php artisan test --compact`
+
+### Phase 2: Make Tests Pass (Green)
 - [ ] Add permissions to `app/Enums/Permission.php`
 - [ ] Create database migration with proper schema
 - [ ] Create Eloquent model with traits and relationships
@@ -492,17 +554,15 @@ Test all service methods:
 - [ ] Create all Blade views with Laravolt components
 - [ ] Add routes with middleware
 - [ ] Add menu configuration
-- [ ] Run migration and test manually
+- [ ] Run migration
+- [ ] Confirm all tests **PASS** with `php artisan test --compact`
 
-### Phase 2: Testing Implementation
-- [ ] Create `.env.testing` configuration
-- [ ] Create icon fixture stubs
-- [ ] Create feature test with permission tests
-- [ ] Create feature test with CRUD operation tests
-- [ ] Create unit test for model
-- [ ] Create unit test for service
-- [ ] Run all tests and ensure coverage
-- [ ] Add coverage to `.gitignore` if needed
+### Phase 3: Refactor
+- [ ] Run `vendor/bin/pint --dirty --format agent`
+- [ ] Eliminate any duplication introduced during Green phase
+- [ ] Confirm all tests still pass after refactoring
+
+---
 
 ## Common Patterns
 
@@ -592,6 +652,8 @@ return redirect()->back()->with('error', 'Error message');
 ```
 
 This workflow ensures consistent, maintainable, and fully tested CRUD implementations that follow Laravel and Laravolt best practices.
+
+---
 
 ## Common Issues & Fixes
 

@@ -13,24 +13,49 @@ Based on the established patterns in the Bank and Bank Account import implementa
 
 ### AI AGENT Responsibilities:
 - ✅ Read and understand the user-created documentation
-- ✅ Implement import feature based on documentation blueprint
-- ✅ Create comprehensive tests for import functionality
+- ✅ Write failing tests FIRST (Red)
+- ✅ Implement import feature to make tests pass (Green)
+- ✅ Refactor while keeping tests green
 - ❌ **NEVER create the import documentation**
 
 **Workflow Rule:** Documentation is the SINGLE SOURCE OF TRUTH. AI agent implements EXACTLY what is specified in the documentation.
 
 ## Workflow Overview
 
-The import feature workflow follows a **three-phase approach** with clear role separation:
+The import feature workflow follows **Test Driven Development (TDD)** with a **Red → Green → Refactor** cycle:
 
 1. **Documentation Phase (USER)** - User creates import specification document at `docs/imports/{resource}.md`
-2. **Implementation Phase (AI AGENT)** - AI agent reads documentation and creates import classes, templates, services, controllers, routes, and views
-3. **Testing Phase (AI AGENT)** - AI agent creates comprehensive test coverage for import functionality
+2. **Red Phase (AI AGENT)** - AI agent reads documentation and writes failing tests that define the expected behavior
+3. **Green Phase (AI AGENT)** - AI agent writes minimum implementation to make all tests pass
+4. **Refactor Phase (AI AGENT)** - AI agent cleans up code while keeping tests green
 
 **Critical Workflow Rule:**
-- **USER** creates the documentation → AI agent reads and implements
+- **USER** creates the documentation → AI agent reads, writes tests, then implements
 - **AI agent NEVER creates the import documentation**
-- **AI agent ONLY reads and uses the documentation** as reference for implementation
+- **AI agent writes tests BEFORE implementation**
+
+**AI Agent Workflow:**
+```
+User Request: "Create import feature for {resource}"
+    ↓
+AI Agent: Check if docs/imports/{resource}.md exists
+    ↓ (if NO)
+    → Ask user to create documentation first
+    ↓ (if YES)
+AI Agent: Read docs/imports/{resource}.md
+    ↓
+AI Agent: Extract requirements (model, columns, validation, Data Map)
+    ↓
+AI Agent: Write failing tests (Red)
+    ↓
+AI Agent: Verify all new tests FAIL
+    ↓
+AI Agent: Implement based on documentation blueprint (Green)
+    ↓
+AI Agent: Verify all tests PASS
+    ↓
+AI Agent: Refactor
+```
 
 ---
 
@@ -40,7 +65,7 @@ The import feature workflow follows a **three-phase approach** with clear role s
 
 **Step:** User creates `docs/imports/{resource}.md`
 
-**IMPORTANT:** This documentation MUST be created by the USER before AI implementation begins. The AI agent will read and use this documentation as the blueprint for implementation.
+**IMPORTANT:** This documentation MUST be created by the USER before AI implementation begins. The AI agent will read and use this documentation as the blueprint for tests and implementation.
 
 The user should create a comprehensive import specification document following the structure below.
 
@@ -184,7 +209,9 @@ Bank
 
 ---
 
-## Phase 2: Implementation Phase (AI Agent)
+## Phase 2: Write Failing Tests — Red (AI Agent)
+
+> **Goal:** Define the expected import behavior through tests BEFORE writing any implementation. All tests should fail at this stage.
 
 ### AI Agent First Step: Read Documentation
 
@@ -192,7 +219,6 @@ Bank
 
 1. **Verify documentation exists:**
    ```bash
-   # Check if user has created the documentation
    ls docs/imports/{resource}.md
    ```
 
@@ -200,68 +226,242 @@ Bank
    ```
    STOP and ask user to create the documentation first:
    "I need you to create the import documentation at docs/imports/{resource}.md
-    before I can implement the import feature. Please follow the structure
-    defined in Phase 1 of the workflow guidelines."
+    before I can implement the import feature."
    ```
 
-3. **If documentation exists:**
-   ```bash
-   # Read the user-created documentation
-   Read docs/imports/{resource}.md
-   ```
-
-4. **Verify documentation is complete:**
-   - Check that `docs/imports/{resource}.md` exists
-   - Verify all required sections are present:
-     - Model name
-     - Form specification
-     - Template structure (columns, data types)
-     - Import validation rules
-     - **Data Map section (CRITICAL)**
-
-5. **Use documentation as blueprint:**
-   - Extract model name from documentation
-   - Extract template columns and data types
-   - Extract validation rules
-   - **Extract Data Map to understand field mappings**
-   - Follow the exact structure specified in documentation
+3. **If documentation exists:** read and extract:
+   - Model name
+   - Template columns and data types
+   - Import validation rules
+   - **Data Map for field mappings (CRITICAL)**
 
 **Understanding Data Map:**
-The Data Map section tells AI agents how to map Excel columns to model fields:
 - **Direct mapping:** `excel_column : model_field`
-  - Example: `kode_bank : code` means Excel column "kode_bank" maps to model field "code"
+  - Example: `kode_bank : code` → Excel column `kode_bank` maps to model field `code`
 - **Reference lookup:** `excel_column : get related's id by related's field`
-  - Example: `kode_bank : get bank's id by bank's code` means look up Bank model by 'code' field and use its 'id'
+  - Example: `kode_bank : get bank's id by bank's code` → look up Bank by `code`, use its `id`
 - **Display-only columns:** Omitted from Data Map (not stored in database)
 
-**AI Agent Workflow:**
-```
-User Request: "Create import feature for {resource}"
-    ↓
-AI Agent: Check if docs/imports/{resource}.md exists
-    ↓ (if NO)
-    → Ask user to create documentation first
-    ↓ (if YES)
-AI Agent: Read docs/imports/{resource}.md
-    ↓
-AI Agent: Extract requirements from documentation
-    ↓
-AI Agent: Implement based on documentation blueprint
-    ↓
-AI Agent: Create tests
+### 2.1 Feature Tests
+
+**File:** `tests/Feature/{Resource}/{Resource}ControllerTest.php`
+
+Add import tests to existing test file (or create new file).
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use App\Enums\Permission;
+use App\Exports\{Resource}TemplateExport;
+use App\Models\{Resource};
+use App\Models\User;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
+use Laravolt\Auth\Models\Permission as LaravoltPermission;
+use Laravolt\Auth\Models\Role;
+use Maatwebsite\Excel\Facades\Excel;
+
+uses(RefreshDatabase::class);
+
+beforeEach(function (): void {
+    $this->viewPermission = LaravoltPermission::firstOrCreate(['name' => Permission::{RESOURCE}_VIEW]);
+    $this->managePermission = LaravoltPermission::firstOrCreate(['name' => Permission::{RESOURCE}_MANAGE]);
+
+    $this->viewerRole = Role::firstOrCreate(['name' => '{Resource}Viewer']);
+    $this->viewerRole->addPermission($this->viewPermission);
+
+    $this->managerRole = Role::firstOrCreate(['name' => '{Resource}Manager']);
+    $this->managerRole->addPermission($this->viewPermission);
+    $this->managerRole->addPermission($this->managePermission);
+
+    Gate::define(Permission::{RESOURCE}_VIEW, fn ($user) => $user->hasPermission(Permission::{RESOURCE}_VIEW));
+    Gate::define(Permission::{RESOURCE}_MANAGE, fn ($user) => $user->hasPermission(Permission::{RESOURCE}_MANAGE));
+
+    $this->viewerUser = User::factory()->create();
+    $this->viewerUser->addRole($this->viewerRole);
+
+    $this->managerUser = User::factory()->create();
+    $this->managerUser->addRole($this->managerRole);
+
+    $this->userWithoutPermission = User::factory()->create();
+
+    $this->withoutMiddleware(ValidateCsrfToken::class);
+});
+
+test('it_can_download_{resource}_template_with_view_permission', function (): void {
+    $response = $this->actingAs($this->viewerUser)
+        ->get(route('{resource}.template'));
+
+    $response->assertStatus(200);
+    $response->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+});
+
+test('it_cannot_download_{resource}_template_without_view_permission', function (): void {
+    $response = $this->actingAs($this->userWithoutPermission)
+        ->get(route('{resource}.template'));
+
+    $response->assertStatus(401);
+});
+
+test('it_can_see_import_section_with_manage_permission', function (): void {
+    $response = $this->actingAs($this->managerUser)
+        ->get(route('{resource}.index'));
+
+    $response->assertStatus(200);
+    $response->assertSee('Import');
+});
+
+test('it_cannot_see_import_section_without_manage_permission', function (): void {
+    $response = $this->actingAs($this->viewerUser)
+        ->get(route('{resource}.index'));
+
+    $response->assertStatus(200);
+    $response->assertDontSee('Import');
+});
+
+test('it_can_import_{resource}_with_valid_template_file', function (): void {
+    Storage::fake('local');
+
+    $templateFile = 'test_import_controller.xlsx';
+    Excel::store(new {Resource}TemplateExport, $templateFile, 'local');
+
+    $file = new UploadedFile(
+        Storage::path($templateFile),
+        'test_import.xlsx',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        null,
+        true
+    );
+
+    $response = $this->actingAs($this->managerUser)
+        ->post(route('{resource}.import'), ['file' => $file]);
+
+    $response->assertRedirect(route('{resource}.index'));
+    $response->assertSessionHasNoErrors();
+});
+
+test('it_cannot_import_{resource}_without_manage_permission', function (): void {
+    Storage::fake('local');
+
+    $templateFile = 'test_import_no_permission.xlsx';
+    Excel::store(new {Resource}TemplateExport, $templateFile, 'local');
+
+    $file = new UploadedFile(
+        Storage::path($templateFile),
+        'test_import.xlsx',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        null,
+        true
+    );
+
+    $response = $this->actingAs($this->viewerUser)
+        ->post(route('{resource}.import'), ['file' => $file]);
+
+    $response->assertStatus(403);
+});
+
+test('it_cannot_import_{resource}_with_invalid_file_format', function (): void {
+    $file = UploadedFile::fake()->create('test.pdf', 100, 'application/pdf');
+
+    $response = $this->actingAs($this->managerUser)
+        ->post(route('{resource}.import'), ['file' => $file]);
+
+    $response->assertSessionHasErrors(['file']);
+});
+
+test('it_cannot_import_{resource}_without_file', function (): void {
+    $response = $this->actingAs($this->managerUser)
+        ->post(route('{resource}.import'), []);
+
+    $response->assertSessionHasErrors(['file']);
+});
 ```
 
-### 2.1 Create Import Class
+### 2.2 Unit Tests — Service
+
+**File:** `tests/Unit/Services/{Resource}ServiceTest.php`
+
+Add import unit tests to existing test file (or create new file).
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use App\Exports\{Resource}TemplateExport;
+use App\Models\{Resource};
+use App\Services\{Resource}Service;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+
+uses(RefreshDatabase::class);
+
+test('it_can_download_{resource}_template', function (): void {
+    $response = {Resource}Service::template();
+
+    expect($response)->toBeInstanceOf(BinaryFileResponse::class);
+    expect($response->getFile()->getExtension())->toBe('xlsx');
+});
+
+test('it_can_import_{resource}_from_excel_file', function (): void {
+    Storage::fake('local');
+
+    $initialCount = {Resource}::count();
+
+    $templateFile = 'test_template_import.xlsx';
+    Excel::store(new {Resource}TemplateExport, $templateFile, 'local');
+
+    {Resource}Service::import(Storage::path($templateFile));
+
+    expect({Resource}::count())->toBeGreaterThan($initialCount);
+});
+
+test('it_can_generate_template_and_import_{resource}', function (): void {
+    {Resource}::factory()->create(['field' => 'TEST_VALUE']);
+
+    $templateResponse = {Resource}Service::template();
+    $templatePath = $templateResponse->getFile()->getRealPath();
+
+    expect(file_exists($templatePath))->toBeTrue();
+
+    {Resource}Service::import($templatePath);
+
+    expect({Resource}::where('field', 'TEST_VALUE')->exists())->toBeTrue();
+});
+```
+
+### 2.3 Verify Tests Are Failing
+
+Run tests to confirm all newly written tests fail (expected at this stage):
+
+```bash
+php artisan test --compact
+```
+
+> All new tests should show as **FAILED**. If a test passes without implementation, the test is not testing the right thing.
+
+---
+
+## Phase 3: Write Minimum Implementation — Green (AI Agent)
+
+> **Goal:** Write the minimum code necessary to make all failing tests pass. Do not add features beyond what the tests require.
+
+### 3.1 Create Import Class
 
 **File:** `app/Imports/{Resource}Import.php`
 
-Create an import class implementing Laravel Excel interfaces.
-
-**IMPORTANT:** Use the **Data Map** section from the documentation to map Excel columns to model fields.
+Use the **Data Map** section from documentation to map Excel columns to model fields.
 
 **Simple Import Pattern (No External Dependencies):**
 
-*Documentation Example:*
+*Documentation Data Map:*
 ```markdown
 ### Data Map
 - kode_bank : code
@@ -285,13 +485,9 @@ use Maatwebsite\Excel\Concerns\WithValidation;
 
 final class {Resource}Import implements SkipsEmptyRows, ToCollection, WithHeadingRow, WithValidation
 {
-    public function collection(Collection $collection)
+    public function collection(Collection $collection): void
     {
         foreach ($collection as $row) {
-            // Use Data Map from documentation:
-            // kode_bank -> code
-            // nama_bank -> name
-
             {Resource}::updateOrCreate(
                 ['code' => $row['kode_bank']],
                 [
@@ -302,70 +498,26 @@ final class {Resource}Import implements SkipsEmptyRows, ToCollection, WithHeadin
         }
     }
 
+    /**
+     * @return array<string, string>
+     */
     public function rules(): array
     {
         return [
-            // Use Excel column names from documentation
             'kode_bank' => 'required|string|max:255',
             'nama_bank' => 'required|string|max:255',
         ];
     }
 
+    /**
+     * @return array<string, string>
+     */
     public function customValidationMessages(): array
     {
         return [
-            'kode_bank.required' => 'Column 1 is required',
-            'kode_bank.max' => 'Column 1 must not exceed 255 characters',
-            'nama_bank.required' => 'Column 2 is required',
-        ];
-    }
-}
-```
-
-```php
-<?php
-
-declare(strict_types=1);
-
-namespace App\Imports;
-
-use App\Models\{Resource};
-use Illuminate\Support\Collection;
-use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
-use Maatwebsite\Excel\Concerns\ToCollection;
-use Maatwebsite\Excel\Concerns\WithHeadingRow;
-use Maatwebsite\Excel\Concerns\WithValidation;
-
-final class {Resource}Import implements SkipsEmptyRows, ToCollection, WithHeadingRow, WithValidation
-{
-    public function collection(Collection $collection)
-    {
-        foreach ($collection as $row) {
-            {Resource}::updateOrCreate(
-                ['unique_field' => $row['excel_column_name']],
-                [
-                    'field1' => $row['excel_column_1'],
-                    'field2' => $row['excel_column_2'],
-                    'unique_field' => $row['excel_column_name'],
-                ]
-            );
-        }
-    }
-
-    public function rules(): array
-    {
-        return [
-            'excel_column_1' => 'required|string|max:255',
-            'excel_column_2' => 'required|string|max:255',
-        ];
-    }
-
-    public function customValidationMessages(): array
-    {
-        return [
-            'excel_column_1.required' => 'Column 1 is required',
-            'excel_column_1.max' => 'Column 1 must not exceed 255 characters',
-            'excel_column_2.required' => 'Column 2 is required',
+            'kode_bank.required' => 'Kode Bank wajib diisi.',
+            'kode_bank.max' => 'Kode Bank maksimal 255 karakter.',
+            'nama_bank.required' => 'Nama Bank wajib diisi.',
         ];
     }
 }
@@ -373,7 +525,7 @@ final class {Resource}Import implements SkipsEmptyRows, ToCollection, WithHeadin
 
 **Complex Import Pattern (With External References & Error Handling):**
 
-*Documentation Example:*
+*Documentation Data Map:*
 ```markdown
 ### Data Map
 - kode_bank : get bank's id by bank's code
@@ -405,32 +557,26 @@ final class {Resource}Import implements SkipsEmptyRows, ToCollection, WithHeadin
      */
     protected array $errors = [];
 
+    /**
+     * @return array<int, self>
+     */
     public function sheets(): array
     {
-        return [
-            0 => $this,
-        ];
+        return [0 => $this];
     }
 
     /**
-     * @param  Collection<int, mixed>  $rows
+     * @param Collection<int, mixed> $rows
      */
     public function collection(Collection $rows): void
     {
-        // Use Data Map from documentation:
-        // kode_bank -> get bank's id by bank's code (reference lookup)
-        // nomor_rekening -> account_number (direct mapping)
-        // atas_nama -> by_name (direct mapping)
-
         $banks = Bank::all();
 
         foreach ($rows as $row) {
-            // Reference lookup: get bank's id by bank's code
             $bank = $banks->where('code', $row['kode_bank'])->first();
 
             if (! $bank) {
                 $this->errors[] = "Bank dengan kode '{$row['kode_bank']}' tidak ditemukan.";
-
                 continue;
             }
 
@@ -448,7 +594,6 @@ final class {Resource}Import implements SkipsEmptyRows, ToCollection, WithHeadin
     public function rules(): array
     {
         return [
-            // Use Excel column names from documentation
             'kode_bank' => 'required|string|exists:banks,code',
             'nama_bank' => 'nullable|string',
             'nomor_rekening' => 'required|numeric',
@@ -487,14 +632,12 @@ final class {Resource}Import implements SkipsEmptyRows, ToCollection, WithHeadin
 **Import Class Requirements:**
 - **CRITICAL:** Must be marked as `final class`
 - Add `declare(strict_types=1);` at the top
-- Implement required interfaces: `SkipsEmptyRows`, `ToCollection`, `WithHeadingRow`, `WithValidation`
+- Implement: `SkipsEmptyRows`, `ToCollection`, `WithHeadingRow`, `WithValidation`
 - Add `WithMultipleSheets` for multi-sheet imports
 - Use `updateOrCreate` for upsert logic or `create` for insert-only
-- Include validation rules matching the documentation
-- Provide custom validation messages in user-friendly language
-- Handle external references with proper error collection
+- Validation rules must use Excel column names (not model field names)
 
-### 2.2 Create Template Export Classes
+### 3.2 Create Template Export Classes
 
 **File:** `app/Exports/{Resource}TemplateExport.php` (Main Template)
 **File:** `app/Exports/{Resource}ImportTemplateExport.php` (Import Sheet)
@@ -516,9 +659,9 @@ use Maatwebsite\Excel\Concerns\WithTitle;
 final class {Resource}TemplateExport implements FromCollection, ShouldAutoSize, WithTitle
 {
     /**
-     * @return Collection
+     * @return Collection<int, array<int, string>>
      */
-    public function collection()
+    public function collection(): Collection
     {
         return collect([
             ['Column Header 1', 'Column Header 2'],
@@ -547,6 +690,9 @@ use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 
 final class {Resource}TemplateExport implements WithMultipleSheets
 {
+    /**
+     * @return array<int, object>
+     */
     public function sheets(): array
     {
         return [
@@ -574,31 +720,17 @@ use Maatwebsite\Excel\Concerns\WithTitle;
 final class {Resource}ImportTemplateExport implements FromCollection, ShouldAutoSize, WithTitle
 {
     /**
-     * @return Collection
+     * @return Collection<int, array<int, string>>
      */
-    public function collection()
+    public function collection(): Collection
     {
         $related = {RelatedModel}::first();
 
-        $headers = [
-            'Column 1',
-            'Column 2',
-            'Column 3',
-        ];
+        $headers = ['Column 1', 'Column 2', 'Column 3'];
 
-        if ($related) {
-            $exampleRow = [
-                $related->code,
-                '=VLOOKUP(A2, RelatedSheet!A:B, 2, FALSE)',
-                fake()->name(),
-            ];
-        } else {
-            $exampleRow = [
-                'EXAMPLE_CODE',
-                '=VLOOKUP(A2, RelatedSheet!A:B, 2, FALSE)',
-                fake()->name(),
-            ];
-        }
+        $exampleRow = $related
+            ? [$related->code, '=VLOOKUP(A2, RelatedSheet!A:B, 2, FALSE)', fake()->name()]
+            : ['EXAMPLE_CODE', '=VLOOKUP(A2, RelatedSheet!A:B, 2, FALSE)', fake()->name()];
 
         return collect([$headers, $exampleRow]);
     }
@@ -610,50 +742,31 @@ final class {Resource}ImportTemplateExport implements FromCollection, ShouldAuto
 }
 ```
 
-**Template Export Requirements:**
-- **CRITICAL:** Must be marked as `final class`
-- Add `declare(strict_types=1);` at the top
-- Use `ShouldAutoSize` for automatic column width
-- Include `WithTitle` with 'Import' as sheet name
-- Provide header row and example data row
-- For complex templates: include related sheet for reference
-- Use `fake()` functions for example data generation
-- Use actual Excel formulas where applicable
-
-### 2.3 Update Service Layer
+### 3.3 Update Service Layer
 
 **File:** `app/Services/{Resource}Service.php`
 
-Add import and template methods to existing service class.
-
 ```php
-use App\Exports\{Resource}Export;
 use App\Exports\{Resource}TemplateExport;
 use App\Imports\{Resource}Import;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 public static function template(): BinaryFileResponse
 {
     return Excel::download(new {Resource}TemplateExport, '{resource}-template.xlsx');
 }
 
-public static function import($file): void
+public static function import(string $file): void
 {
     Excel::import(new {Resource}Import, $file);
 }
 ```
 
-**Service Method Requirements:**
-- Use descriptive template filename with `{resource}-template.xlsx` format
-- Template method should return `BinaryFileResponse`
-- Import method should accept file path parameter
-- Import method should return `void`
+### 3.4 Create Import Request Validation
 
-### 2.4 Create Import Request Validation
+**File:** `app/Http/Requests/{Resource}ImportRequest.php`
 
-**File:** `app/Http/Requests/{Resource}ImportRequest.php` (Specific)
-OR use existing `app/Http/Requests/ImportRequest.php` (Generic)
-
-**Specific Request Pattern:**
 ```php
 <?php
 
@@ -667,17 +780,12 @@ use Illuminate\Foundation\Http\FormRequest;
 
 final class {Resource}ImportRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return $this->user()->can(Permission::{RESOURCE}_MANAGE);
     }
 
     /**
-     * Get the validation rules that apply to the request.
-     *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
@@ -689,20 +797,13 @@ final class {Resource}ImportRequest extends FormRequest
 }
 ```
 
-**Request Validation Requirements:**
-- **CRITICAL:** Must be marked as `final class`
-- Add `declare(strict_types=1);` at the top
-- Authorize based on `{RESOURCE}_MANAGE` permission
-- Validate file is required and must be xlsx format
-
-### 2.5 Update Controller
+### 3.5 Update Controller
 
 **File:** `app/Http/Controllers/{Resource}Controller.php`
 
-Add template and import methods to existing controller.
-
 ```php
 use App\Http\Requests\{Resource}ImportRequest;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 public function template(): BinaryFileResponse
 {
@@ -714,21 +815,13 @@ public function import({Resource}ImportRequest $request): RedirectResponse
     {Resource}Service::import($request->file('file'));
 
     return redirect()->route('{resource}.index')
-        ->withSuccess('{Resource} imported successfully');
+        ->withSuccess('{Resource} berhasil diimport');
 }
 ```
 
-**Controller Method Requirements:**
-- Template method: return BinaryFileResponse from service
-- Import method: inject specific import request class
-- Import method: call service with uploaded file
-- Import method: redirect with success flash message
-
-### 2.6 Update Routes
+### 3.6 Update Routes
 
 **File:** `routes/web.php`
-
-Add template and import routes within the resource's middleware group.
 
 ```php
 Route::middleware({Resource}View::class)->group(function (): void {
@@ -739,17 +832,11 @@ Route::middleware({Resource}View::class)->group(function (): void {
 });
 ```
 
-**Route Requirements:**
-- Place routes within existing resource middleware group
-- Use consistent naming: `{resource}.template`, `{resource}.import`
-- Template route: GET method
-- Import route: POST method (file upload)
+**Note:** Place template and import routes before the resource route to avoid conflicts.
 
-### 2.7 Update Views
+### 3.7 Update Views
 
 **File:** `resources/views/{resource}/index.blade.php`
-
-Add import section to the index page accordion.
 
 ```blade
 @if (auth()->user()->can(\App\Enums\Permission::{RESOURCE}_MANAGE))
@@ -757,9 +844,8 @@ Add import section to the index page accordion.
     <i class="dropdown icon"></i>
     Import
 </div>
-<div class=" content">
+<div class="content">
     <p>
-
         {!! form()->open()->post()->action(route('{resource}.import'))->id('import')->multipart() !!}
         {!! form()->file('file')->label('File')->required() !!}
         <x-volt-link-button class="secondary" url="{{ route('{resource}.template') }}" icon="file excel">
@@ -774,246 +860,25 @@ Add import section to the index page accordion.
 @endif
 ```
 
-**View Requirements:**
-- Wrap in permission check for `{RESOURCE}_MANAGE`
-- Use Fomantic UI accordion structure
-- Use Laravolt form builder for file input
-- Add template download link button
-- Add submit button for import
-- Use multipart form for file upload
+### 3.8 Verify All Tests Pass
+
+```bash
+php artisan test --compact
+```
+
+> All tests must pass before proceeding. If any test fails, fix the implementation — **do not modify the test** unless the test itself was written incorrectly.
 
 ---
 
-## Phase 3: Testing Phase
+## Phase 4: Refactor (AI Agent)
 
-### 3.1 Feature Tests
+> **Goal:** Improve code quality without changing behavior. Tests must remain green throughout.
 
-**File:** `tests/Feature/{Resource}/{Resource}ControllerTest.php`
-
-Add comprehensive feature tests for import functionality.
-
-**Test Suite Pattern:**
-
-```php
-use App\Enums\Permission;
-use App\Exports\{Resource}TemplateExport;
-use App\Models\{Resource};
-use App\Models\User;
-use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Gate;
-use Laravolt\Platform\Models\Role;
-use Maatwebsite\Excel\Facades\Excel;
-
-uses(RefreshDatabase::class);
-
-// ... existing tests ...
-
-test('it_can_download_{resource}_template_with_view_permission', function () {
-    $response = $this->actingAs($this->normalUser)
-        ->get(route('{resource}.template'));
-
-    $response->assertStatus(200);
-    $response->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-});
-
-test('it_cannot_download_{resource}_template_without_view_permission', function () {
-    $userWithoutPermission = User::factory()->create();
-
-    $response = $this->actingAs($userWithoutPermission)
-        ->get(route('{resource}.template'));
-
-    $response->assertStatus(401);
-});
-
-test('it_can_access_import_page_with_manage_permission', function () {
-    $response = $this->actingAs($this->adminUser)
-        ->get(route('{resource}.index'));
-
-    $response->assertStatus(200);
-    $response->assertSee('Import');
-});
-
-test('it_can_import_{resource}_with_valid_template_file', function () {
-    Storage::fake('local');
-
-    $templateFile = 'test_import_controller.xlsx';
-    Excel::store(
-        new {Resource}TemplateExport,
-        $templateFile,
-        'local'
-    );
-
-    $fullPath = Storage::path($templateFile);
-
-    $file = new UploadedFile(
-        $fullPath,
-        'test_import.xlsx',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        null,
-        true
-    );
-
-    $response = $this->actingAs($this->adminUser)
-        ->post(route('{resource}.import'), [
-            'file' => $file,
-        ]);
-
-    $response->assertRedirect(route('{resource}.index'));
-    $response->assertSessionHasNoErrors();
-});
-
-test('it_cannot_import_{resource}_without_manage_permission', function () {
-    Storage::fake('local');
-
-    $templateFile = 'test_import_no_permission.xlsx';
-    Excel::store(
-        new {Resource}TemplateExport,
-        $templateFile,
-        'local'
-    );
-
-    $fullPath = Storage::path($templateFile);
-
-    $file = new UploadedFile(
-        $fullPath,
-        'test_import.xlsx',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        null,
-        true
-    );
-
-    $response = $this->actingAs($this->normalUser)
-        ->post(route('{resource}.import'), [
-            'file' => $file,
-        ]);
-
-    $response->assertStatus(403);
-});
-
-test('it_cannot_import_{resource}_with_invalid_file_format', function () {
-    $file = UploadedFile::fake()->create('test.pdf', 100, 'application/pdf');
-
-    $response = $this->actingAs($this->adminUser)
-        ->post(route('{resource}.import'), [
-            'file' => $file,
-        ]);
-
-    $response->assertSessionHasErrors(['file']);
-});
-
-test('it_cannot_import_{resource}_without_file', function () {
-    $response = $this->actingAs($this->adminUser)
-        ->post(route('{resource}.import'), []);
-
-    $response->assertSessionHasErrors(['file']);
-});
-```
-
-**Feature Test Requirements:**
-- Test template download with and without permissions
-- Test import page visibility with manage permission
-- Test successful import with valid template file
-- Test import authorization (with/without manage permission)
-- Test validation for invalid file formats
-- Test validation for missing file
-- Use `Storage::fake('local')` for file operations
-- Use `Excel::store()` to create test files
-- Use `UploadedFile` for file upload simulation
-
-### 3.2 Unit Tests - Service
-
-**File:** `tests/Unit/Services/{Resource}ServiceTest.php`
-
-Add unit tests for service import methods.
-
-**Test Suite Pattern:**
-
-```php
-use App\Exports\{Resource}TemplateExport;
-use App\Models\{Resource};
-use App\Services\{Resource}Service;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Storage;
-use Maatwebsite\Excel\Facades\Excel;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
-
-uses(RefreshDatabase::class);
-
-// ... existing tests ...
-
-test('it_can_download_{resource}_template', function () {
-    $response = {Resource}Service::template();
-
-    expect($response)->toBeInstanceOf(BinaryFileResponse::class);
-    expect($response->getFile()->getExtension())->toBe('xlsx');
-});
-
-test('it_can_import_{resource}_from_excel_file', function () {
-    Storage::fake('local');
-
-    $initialCount = {Resource}::count();
-
-    $templateFile = 'test_template_import.xlsx';
-    Excel::store(
-        new {Resource}TemplateExport,
-        $templateFile,
-        'local'
-    );
-
-    $fullPath = Storage::path($templateFile);
-    {Resource}Service::import($fullPath);
-
-    expect({Resource}::count())->toBeGreaterThan($initialCount);
-});
-
-test('it_can_import_{resource}_from_generated_template', function () {
-    Storage::fake('local');
-
-    {Resource}::factory()->create([
-        'field' => 'TEST_VALUE',
-    ]);
-
-    $initialCount = {Resource}::count();
-
-    $templateFile = 'test_import_generated.xlsx';
-    Excel::store(
-        new {Resource}TemplateExport,
-        $templateFile,
-        'local'
-    );
-
-    $fullPath = Storage::path($templateFile);
-    {Resource}Service::import($fullPath);
-
-    expect({Resource}::count())->toBeGreaterThanOrEqual($initialCount);
-});
-
-test('it_can_generate_template_and_import_{resource}', function () {
-    {Resource}::factory()->create([
-        'field' => 'TEST_VALUE',
-    ]);
-
-    $templateResponse = {Resource}Service::template();
-    $templatePath = $templateResponse->getFile()->getRealPath();
-
-    expect(file_exists($templatePath))->toBeTrue();
-
-    {Resource}Service::import($templatePath);
-
-    expect({Resource}::where('field', 'TEST_VALUE')->exists())->toBeTrue();
-});
-```
-
-**Unit Test Requirements:**
-- Test template download returns BinaryFileResponse
-- Test import from stored Excel file
-- Test import from generated template
-- Test round-trip: generate template → import
-- Verify data persistence after import
-- Use `Storage::fake('local')` for file operations
+- Extract duplicated logic
+- Improve naming clarity
+- Optimize queries (load related models once, not per-row)
+- Run code formatting: `vendor/bin/pint --dirty --format agent`
+- Re-run tests after every refactor step: `php artisan test --compact`
 
 ---
 
@@ -1042,15 +907,6 @@ test('it_can_generate_template_and_import_{resource}', function () {
 - Collect and report import errors for complex imports
 - Use flash messages for user feedback
 
-### Testing Standards
-
-- Test both success and failure scenarios
-- Test permission-based access control
-- Test file validation (format, presence)
-- Test data persistence after import
-- Use factories for test data
-- Clean up storage between tests
-
 ---
 
 ## Workflow Checklist
@@ -1071,40 +927,30 @@ test('it_can_generate_template_and_import_{resource}', function () {
   - [ ] Omit display-only columns from Data Map
 - [ ] USER includes related sheets if applicable
 
-**AI Agent Trigger:** User requests import feature implementation and documentation already exists at `docs/imports/{resource}.md`
+### Phase 2: Write Failing Tests — Red (AI AGENT)
 
-### Phase 2: Implementation (AI AGENT)
+- [ ] Read `docs/imports/{resource}.md` and extract Data Map
+- [ ] Write feature tests (template download, import, permission checks, file validation)
+- [ ] Write unit tests for service (template download, import, round-trip)
+- [ ] Confirm all new tests **FAIL** with `php artisan test --compact`
 
-**AI Agent Prerequisites:**
-- ✅ User has created `docs/imports/{resource}.md`
-- ✅ AI agent has read and understood the documentation
-- ✅ AI agent has extracted Data Map for field mappings
+### Phase 3: Make Tests Pass — Green (AI AGENT)
 
-- [ ] AI agent reads `docs/imports/{resource}.md`
-- [ ] AI agent extracts model name, columns, and validation rules
-- [ ] **AI agent extracts Data Map for Excel-to-model field mappings**
-- [ ] AI agent creates `app/Imports/{Resource}Import.php` using Data Map
-- [ ] AI agent creates `app/Exports/{Resource}TemplateExport.php`
-- [ ] AI agent creates `app/Exports/{Resource}ImportTemplateExport.php` (if complex)
-- [ ] AI agent updates `app/Services/{Resource}Service.php` (add template & import methods)
-- [ ] AI agent creates `app/Http/Requests/{Resource}ImportRequest.php` (or use generic)
-- [ ] AI agent updates `app/Http/Controllers/{Resource}Controller.php` (add template & import methods)
-- [ ] AI agent updates `routes/web.php` (add template & import routes)
-- [ ] AI agent updates `resources/views/{resource}/index.blade.php` (add import section)
+- [ ] Create `app/Imports/{Resource}Import.php` using Data Map
+- [ ] Create `app/Exports/{Resource}TemplateExport.php`
+- [ ] Create `app/Exports/{Resource}ImportTemplateExport.php` (if complex)
+- [ ] Add `template()` and `import()` to `app/Services/{Resource}Service.php`
+- [ ] Create `app/Http/Requests/{Resource}ImportRequest.php`
+- [ ] Add `template()` and `import()` to `app/Http/Controllers/{Resource}Controller.php`
+- [ ] Update `routes/web.php` (add template & import routes)
+- [ ] Update `resources/views/{resource}/index.blade.php` (add import section)
+- [ ] Confirm all tests **PASS** with `php artisan test --compact`
 
-### Phase 3: Testing (AI AGENT)
+### Phase 4: Refactor (AI AGENT)
 
-- [ ] AI agent adds template download test (with permission)
-- [ ] AI agent adds template download test (without permission)
-- [ ] AI agent adds import page visibility test
-- [ ] AI agent adds successful import test
-- [ ] AI agent adds import authorization test
-- [ ] AI agent adds invalid file format test
-- [ ] AI agent adds missing file test
-- [ ] AI agent adds service template download test
-- [ ] AI agent adds service import test
-- [ ] AI agent adds round-trip test (template → import)
-- [ ] AI agent runs all tests: `php artisan test --compact`
+- [ ] Run `vendor/bin/pint --dirty --format agent`
+- [ ] Eliminate any duplication introduced during Green phase
+- [ ] Confirm all tests still pass
 
 ---
 
@@ -1129,9 +975,6 @@ Implementation: `$bank = Bank::where('code', $row['kode_bank'])->first(); $model
 
 **Display-Only (Not Stored):**
 ```markdown
-### Data Map
-- kode_bank : code
-- nama_bank : name
 # Note: 'nama_bank' column in Excel is display-only (VLOOKUP), not stored
 ```
 Implementation: Skip 'nama_bank' when creating model
@@ -1161,7 +1004,7 @@ Use `updateOrCreate` for idempotent imports:
 
 ### Complex Import (With External References)
 
-Load related models once for performance:
+Load related models once for performance (not per-row):
 ```php
 $relatedModels = RelatedModel::all();
 
@@ -1183,11 +1026,9 @@ Use existing data for realistic examples:
 ```php
 $existing = Model::first();
 
-if ($existing) {
-    $example = [$existing->field, fake()->name()];
-} else {
-    $example = ['EXAMPLE', fake()->name()];
-}
+$example = $existing
+    ? [$existing->field, fake()->name()]
+    : ['EXAMPLE', fake()->name()];
 ```
 
 ### Excel Formulas in Templates
@@ -1225,7 +1066,7 @@ $model->code = $row['kode_bank'];
 
 **Problem:** Invalid data passes validation.
 
-**Solution:** Ensure validation rules use Excel column names (not database field names):
+**Solution:** Validation rules must use Excel column names (not database field names):
 ```php
 // Use Excel column name (from documentation)
 'kode_bank' => 'required'

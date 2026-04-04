@@ -1,8 +1,8 @@
 # Export Feature Workflow Guidelines
 
-**Two-commit approach:** Implementation → Testing
+**TDD approach:** Red → Green → Refactor
 
-**Workflow:** Read docs → Implement → Test
+**Workflow:** Read docs → Write failing tests → Implement → Refactor
 
 ## Phase 1: Documentation (User)
 
@@ -35,14 +35,137 @@
     - Column Header (database_column) : Type
 ```
 
-## Phase 2: Implementation (AI)
+---
 
-### 2.1 Export Class
+## Phase 2: Write Failing Tests (Red)
+
+> **Goal:** Define the expected export behavior through tests BEFORE writing any implementation. All tests should fail at this stage.
+
+### 2.1 Feature Tests
+
+**File:** `tests/Feature/{Feature}/{Feature}ControllerTest.php`
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use App\Enums\Permission;
+use App\Models\{RelatedModel};
+use App\Models\{Model};
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravolt\Auth\Models\Permission as LaravoltPermission;
+use Laravolt\Auth\Models\Role;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
+
+uses(RefreshDatabase::class);
+
+beforeEach(function (): void {
+    $this->exportPermission = LaravoltPermission::firstOrCreate(['name' => Permission::{FEATURE}_VIEW]);
+
+    $this->exporterRole = Role::firstOrCreate(['name' => '{Feature}Exporter']);
+    $this->exporterRole->addPermission($this->exportPermission);
+
+    Gate::define(Permission::{FEATURE}_VIEW, function ($user) {
+        return $user->hasPermission(Permission::{FEATURE}_VIEW);
+    });
+
+    $this->userWithPermission = User::factory()->create();
+    $this->userWithPermission->addRole($this->exporterRole);
+
+    $this->userWithoutPermission = User::factory()->create();
+
+    $this->withoutMiddleware(ValidateCsrfToken::class);
+});
+
+test('it_can_export_{feature}_with_view_permission', function (): void {
+    $entity = {RelatedModel}::factory()->create();
+    {Model}::factory()->count(3)->create(['foreign_key' => $entity->id]);
+
+    $response = $this->actingAs($this->userWithPermission)
+        ->get(route('{feature}.export', ['param_id' => $entity->id]));
+
+    $response->assertStatus(200);
+    $response->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+});
+
+test('it_cannot_export_{feature}_without_view_permission', function (): void {
+    $entity = {RelatedModel}::factory()->create();
+
+    $response = $this->actingAs($this->userWithoutPermission)
+        ->get(route('{feature}.export', ['param_id' => $entity->id]));
+
+    $response->assertStatus(401);
+});
+```
+
+### 2.2 Unit Tests
+
+**File:** `tests/Unit/Services/{Feature}ServiceTest.php`
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use App\Models\{RelatedModel};
+use App\Models\{Model};
+use App\Services\{Feature}Service;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+
+uses(RefreshDatabase::class);
+
+test('it_can_export_{feature}_by_param_id', function (): void {
+    $entity = {RelatedModel}::factory()->create(['name' => 'Test']);
+    {Model}::factory()->count(3)->create(['foreign_key' => $entity->id]);
+
+    $response = {Feature}Service::export($entity->id);
+
+    expect($response)->toBeInstanceOf(BinaryFileResponse::class);
+    expect($response->getFile()->getExtension())->toBe('xlsx');
+});
+
+test('it_throws_exception_when_exporting_non_existent_entity', function (): void {
+    {Feature}Service::export(999);
+})->throws(ModelNotFoundException::class);
+```
+
+### 2.3 Verify Tests Are Failing
+
+Run tests to confirm all newly written tests fail (expected at this stage):
+
+```bash
+php artisan test --compact
+```
+
+> All new tests should show as **FAILED**. If a test passes without implementation, the test is not testing the right thing.
+
+---
+
+## Phase 3: Write Minimum Implementation (Green)
+
+> **Goal:** Write the minimum code necessary to make all failing tests pass. Do not add features beyond what the tests require.
+
+### 3.1 Permission
+
+**File:** `app/Enums/Permission.php`
+
+```php
+// {FEATURE}
+const {FEATURE}_VIEW = '{feature}:view';
+```
+
+### 3.2 Export Class
 
 **File:** `app/Exports/{Feature}Export.php`
 
 ```php
 <?php
+
 declare(strict_types=1);
 
 namespace App\Exports;
@@ -57,12 +180,7 @@ use Maatwebsite\Excel\Concerns\WithTitle;
 
 final class {Feature}Export implements FromQuery, ShouldAutoSize, WithColumnFormatting, WithHeadings, WithMapping, WithTitle
 {
-    private $paramId;
-
-    public function __construct($paramId)
-    {
-        $this->paramId = $paramId;
-    }
+    public function __construct(private readonly int $paramId) {}
 
     public function query()
     {
@@ -98,7 +216,7 @@ final class {Feature}Export implements FromQuery, ShouldAutoSize, WithColumnForm
 }
 ```
 
-### 2.2 Service Layer
+### 3.3 Service Layer
 
 **File:** `app/Services/{Feature}Service.php`
 
@@ -112,12 +230,12 @@ public static function export(int $paramId): BinaryFileResponse
     $now = date('Ymd-His');
     $entity = RelatedModel::findOrFail($paramId);
     $fileName = "{feature}-{$entity->name}-{$now}.xlsx";
-    
+
     return Excel::download(new {Feature}Export($paramId), $fileName);
 }
 ```
 
-### 2.3 Controller
+### 3.4 Controller
 
 **File:** `app/Http/Controllers/{Feature}Controller.php`
 
@@ -132,7 +250,7 @@ public function export(Request $request): BinaryFileResponse
 }
 ```
 
-### 2.4 UI & Routes
+### 3.5 UI & Routes
 
 **UI:** `resources/views/{feature}/index.blade.php`
 
@@ -160,73 +278,51 @@ Route::middleware({Feature}View::class)->group(function (): void {
 });
 ```
 
-## Phase 3: Testing (AI)
+### 3.6 Verify All Tests Pass
 
-### 3.1 Feature Tests
-
-**File:** `tests/Feature/{Feature}/{Feature}ControllerTest.php`
-
-```php
-test('it_can_export_{feature}_with_view_permission', function () {
-    $entity = RelatedModel::factory()->create();
-    Model::factory()->count(3)->create(['foreign_key' => $entity->id]);
-
-    $response = $this->actingAs($this->normalUser)
-        ->get(route('{feature}.export', ['param_id' => $entity->id]));
-
-    $response->assertStatus(200);
-    $response->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-});
-
-test('it_cannot_export_{feature}_without_view_permission', function () {
-    $entity = RelatedModel::factory()->create();
-    $userWithoutPermission = User::factory()->create();
-
-    $response = $this->actingAs($userWithoutPermission)
-        ->get(route('{feature}.export', ['param_id' => $entity->id]));
-
-    $response->assertStatus(401);
-});
+```bash
+php artisan test --compact
 ```
 
-### 3.2 Unit Tests
+> All tests must pass before proceeding. If any test fails, fix the implementation — **do not modify the test** unless the test itself was written incorrectly.
 
-**File:** `tests/Unit/Services/{Feature}ServiceTest.php`
+---
 
-```php
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
+## Phase 4: Refactor
 
-test('it_can_export_{feature}_by_param_id', function () {
-    $entity = RelatedModel::factory()->create(['name' => 'Test']);
-    Model::factory()->count(3)->create(['foreign_key' => $entity->id]);
+> **Goal:** Improve code quality without changing behavior. Tests must remain green throughout.
 
-    $response = Service::export($entity->id);
+- Extract duplicated logic
+- Improve naming clarity
+- Run code formatting: `vendor/bin/pint --dirty --format agent`
+- Re-run tests after every refactor step: `php artisan test --compact`
 
-    expect($response)->toBeInstanceOf(BinaryFileResponse::class);
-    expect($response->getFile()->getExtension())->toBe('xlsx');
-});
-
-test('it_throws_exception_when_exporting_non_existent_entity', function () {
-    Service::export(999);
-})->throws(ModelNotFoundException::class);
-```
+---
 
 ## Checklist
 
-**Documentation:**
+### Phase 1: Documentation
 - [ ] Read `docs/exports/{feature}.md` with SQL query and column mapping
 
-**Implementation:**
+### Phase 2: Write Failing Tests (Red)
+- [ ] Write feature tests (success + permission denied)
+- [ ] Write unit tests (export + exception)
+- [ ] Confirm all new tests **FAIL** with `php artisan test --compact`
+
+### Phase 3: Make Tests Pass (Green)
+- [ ] Add permission constant to `app/Enums/Permission.php`
 - [ ] Create `app/Exports/{Feature}Export.php`
 - [ ] Add export method to service
 - [ ] Add export method to controller
 - [ ] Add export form to index view
 - [ ] Add export route
+- [ ] Confirm all tests **PASS** with `php artisan test --compact`
 
-**Testing:**
-- [ ] Add feature tests (success + permission denied)
-- [ ] Add unit tests (export + exception)
-- [ ] Run tests
+### Phase 4: Refactor
+- [ ] Run `vendor/bin/pint --dirty --format agent`
+- [ ] Confirm all tests still pass
+
+---
 
 ## Common Issues
 
