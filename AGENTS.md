@@ -27,7 +27,7 @@
 
 * **App Layout:** `<x-volt-app title="Dashboard"> ... </x-volt-app>`
 * **Button:** `<x-volt-button icon="plus" class="pink" color="primary" size="large">Export</x-volt-button>`
-* **Submit Button:** `<x-volt-submit-button icon="save" label="Save Post" />`
+* **Submit Button:** `<x-volt-button icon="save" label="Save Post" />`
 * **Link Button:** `<x-volt-link-button url="{{ route('posts.create') }}" icon="plus" label="New Post" class="blue" />`
 * **Dropdown Button:** `<x-volt-dropdown-button label="Actions" icon="settings"> <a href="..." class="item">Action 1</a> </x-volt-dropdown-button>`
 * **Card:** `<x-volt-card title="Card Title" cover="url.jpg" content="Main content" meta.before="Date" />`
