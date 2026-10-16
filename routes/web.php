@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\ShowcaseController;
 use App\Http\Controllers\UsersController;
 use Illuminate\Support\Facades\Route;
 
@@ -21,6 +22,7 @@ Route::redirect('/', 'auth/login');
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/home', HomeController::class)->name('home');
+    Route::get('/showcase', ShowcaseController::class)->name('showcase');
 
     Route::post('/users', [UsersController::class, 'store'])->name('users.store');
 });

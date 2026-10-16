@@ -3,6 +3,12 @@
 return [
     'Menu' => [
         'order' => 1,
-        'menu' => [],
+        'menu' => [
+            'Showcase' => [
+                'route' => 'showcase',
+                'active' => 'showcase*',
+                'icon' => 'paint-brush',
+            ],
+        ],
     ],
 ];
