@@ -1,72 +1,90 @@
-[![Quality Gate Status](https://sonarqube.test/api/project_badges/measure?project=laravolt_project&metric=alert_status)](https://sonarqube.test/dashboard?id=laravolt_project)
-[![Build Status](https://github.com/username/laravolt-project/actions/workflows/tests.yml/badge.svg)](https://github.com/username/laravolt-project/actions)
-[![Coverage](https://sonarqube.test/api/project_badges/measure?project=laravolt_project&metric=coverage)](https://sonarqube.test/dashboard?id=laravolt_project)
+# Volt AI Blank
 
-<!-- TODO: Update placeholder for realtime project badges -->
+A blank **Laravolt** starter template used as a sandbox for testing AI coding agents. Agents build features such as CRUD, REST APIs and Excel import/export on top of it. After evaluation the project is reset to a clean state; commits named `blank` mark those resets.
 
-# Ultra-high Quality Laravolt Application
+## Tech Stack
+
+- **Laravel 12** + **Laravolt 6.x** (Fomantic UI, Livewire 3)
+- **Auth:** Laravolt built-in auth (web) and Laravel Sanctum (API)
+- **Database:** SQLite
+- **Testing:** Pest 4
+- **Code style:** Laravel Pint
+- **Import/Export:** Maatwebsite Excel 3.x
 
 ## Getting Started
 
-> **Requires [PHP 8.4+](https://php.net/releases/)**.
-
-Clone the repository using:
+> **Requires PHP 8.2+**, Composer, and Node.js.
 
 ```bash
-git clone https://github.com/qisthidev/laravolt-starter-kit laravolt-project
-```
-
-### Initial Setup
-
-Navigate to your project and complete the setup:
-
-```bash
-cd laravolt-project
-
-# Setup project
+# Install dependencies, create .env, generate key, migrate, build assets
 composer setup
 
-# Start the development server
+# Optional: seed a test user (test@example.com / password)
+php artisan db:seed
+
+# Start server, queue worker, log viewer (Pail), and Vite concurrently
 composer dev
 ```
 
-### Optional: Browser Testing Setup
-
-If you plan to use Pest's browser testing capabilities:
-
-```bash
-npm install playwright
-npx playwright install
-```
+Open `/showcase` after logging in to browse the available Laravolt UI components (buttons, forms, cards, panels, tabs, tables, charts, statistics).
 
 ### Verify Installation
-
-Run the test suite to ensure everything is configured correctly:
 
 ```bash
 composer test
 ```
 
-You should see 100% test coverage and all quality checks passing.
-
 ## Available Tooling
 
-### Development
+| Command | Description |
+|---------|-------------|
+| `composer setup` | Full first-time setup (install, `.env`, key, migrate, `npm install`, build) |
+| `composer dev` | Runs `artisan serve`, queue listener, Pail, and Vite dev server |
+| `composer test` | Clears config cache and runs the full Pest suite |
+| `php artisan test --compact --filter=Name` | Runs a specific test |
+| `vendor/bin/pint --dirty` | Formats changed PHP files |
+| `npm run build` | Builds frontend assets |
 
-- `composer dev` - Starts Laravel server, queue worker, log monitoring, and Vite dev server concurrently
+## Project Structure
 
-### Code Quality
+```
+app/
+├── Enums/Permission.php        # Permission constants (ACL)
+├── Http/
+│   ├── Controllers/            # Web controllers
+│   ├── Controllers/Api/        # API controllers (use ApiResponse helper)
+│   ├── Controllers/My/         # Profile & password
+│   ├── Livewire/               # Tables, charts, statistics
+│   └── Responses/ApiResponse.php
+├── Exports/  Imports/  Services/  Policies/   # Empty, filled per feature
+└── Models/User.php             # Extends Laravolt User, uses ULID
+config/laravolt/menu/menu.php   # Sidebar menu
+routes/  web.php · api.php · my.php · auth.php
+docs/    crud/ · api/ · exports/ · imports/    # Feature specs (input for agents)
+.ai/workflow/                   # TDD workflow guides for agents
+```
 
-- `composer lint` - Runs Rector (refactoring), Pint (PHP formatting), and Prettier (JS/TS formatting)
-- `composer test:lint` - Dry-run mode for CI/CD pipelines
+## Development Workflow (TDD)
 
-### Testing
+Every feature follows the same flow:
 
-- `composer test:type-coverage` - Ensures 100% type coverage with Pest
-- `composer test:types` - Runs PHPStan at level 9 (maximum strictness)
-- `composer test:unit` - Runs Pest tests with 100% code coverage requirement
-- `composer test` - Runs the complete test suite (type coverage, unit tests, linting, static analysis)
+1. **User** writes the spec in `docs/{type}/{feature}.md`.
+2. **Agent** reads the matching guide in `.ai/workflow/`.
+3. **Agent** writes failing tests (Red), implements until they pass (Green), then refactors.
 
-### Maintenance
+| Feature type | Workflow | Spec location |
+|--------------|----------|---------------|
+| CRUD (web) | `STANDARD-WORKFLOW.md` | `docs/crud/{feature}.md` |
+| REST API | `API-WORKFLOW.md` | `docs/api/{resource}.md` |
+| Export | `EXPORT-WORKFLOW.md` | `docs/exports/{feature}.md` |
+| Import | `IMPORT-WORKFLOW.md` | `docs/imports/{resource}.md` |
 
-- `composer update:requirements` - Updates all PHP and NPM dependencies to latest versions
+## Conventions
+
+- Use Laravolt Form Builder (`form()->...`) instead of raw HTML forms.
+- Use Laravolt Suitable/TableView instead of raw HTML tables.
+- Use `<x-volt-*>` Blade components for UI.
+- Define permissions in `app/Enums/Permission.php` and authorize by permission, never by role.
+- Every change ships with a test.
+
+See `CLAUDE.md` for the full agent guidelines.
